@@ -36,7 +36,7 @@ public class TraitorRun implements CommandExecutor {
 		FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
 		FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
 		Set<String> traitorList = traitors.getKeys(false);
-		Long delay = TimeUnit.MINUTES.toMillis(config.getLong("cooldowns.traitor-grace-period"));
+		Long delay = (config.getLong("cooldowns.traitor-grace-period")*60)*20;
 		if (args.length < 1) {
 			sender.sendMessage(ChatColor.RED + "/traitor add/admincheck");
 		} else if (args[0].equalsIgnoreCase("add")) {
