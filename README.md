@@ -1,2 +1,2 @@
 # Traitors
-Traitor Stuff
+Minecraft Plugin for a server.
