@@ -12,6 +12,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.Potion;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +51,7 @@ public class TraitorRun implements CommandExecutor {
 				if (!traitorList.contains(pUUID) || !sender.hasPermission("group.bandit")) {
 					traitors.set(pUUID + ".playtime", playtime);
 					traitors.set(pUUID + ".life", config.getInt("default-lives"));
+					traitors.set(pUUID + ".startdate" , System.currentTimeMillis());
 					int page = 0;
 					for (int i = 0; i < traitorList.size(); ) {
 						ArrayList arr = new ArrayList();
@@ -72,27 +76,41 @@ public class TraitorRun implements CommandExecutor {
 									+ ChatColor.DARK_RED + user.getName() + ChatColor.GRAY + " has betrayed the Kingdom and escaped to"
 									+ ChatColor.DARK_GRAY + " The Badlands" + ChatColor.GRAY + "!" + ChatColor.YELLOW + " Farmers+, "
 									+ ChatColor.GRAY + "hunt them down for " + ChatColor.AQUA + "100k Bounty and Special Tag!");
-							online.sendMessage("");
-							online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
-									+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals are opening in 5 minutes...");
 						}
-						TraitorsMain.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(TraitorsMain.getInstance(), new Runnable() {
-							public void run() {
-								if(CMI.getInstance().getPortalManager().getByName("bhportal") != null || CMI.getInstance().getPortalManager().getByName("nhportal") != null) {
-									for (Player online : Bukkit.getOnlinePlayers()) {
-										online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
-												+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals have " + ChatColor.GREEN + "OPENED");
-									}
-									CMI.getInstance().getPortalManager().getByName("bhportal").setEnabled(true);
-									CMI.getInstance().getPortalManager().getByName("nhportal").setEnabled(true);
-								} else {
-									for (Player online : Bukkit.getOnlinePlayers()) {
-										online.sendMessage(ChatColor.RED + "Looks like ImuRgency has cucked something up with the badlands portals! Report to an admin.");
+						traitors = YamlConfiguration.loadConfiguration(f);
+						traitorList = traitors.getKeys(false);
+						if(traitorList.size() < 2) {
+							for (Player online : Bukkit.getOnlinePlayers()) {
+								online.sendMessage("");
+								online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
+										+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals are opening in " + config.getLong("cooldowns.traitor-grace-period") + " minutes...");
+							}
+							TraitorsMain.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(TraitorsMain.getInstance(), new Runnable() {
+								public void run() {
+									if (CMI.getInstance().getPortalManager().getByName("bhportal") != null || CMI.getInstance().getPortalManager().getByName("nhportal") != null) {
+										for (Player online : Bukkit.getOnlinePlayers()) {
+											online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
+													+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals have " + ChatColor.GREEN + "OPENED");
+										}
+										CMI.getInstance().getPortalManager().getByName("bhportal").setEnabled(true);
+										CMI.getInstance().getPortalManager().getByName("nhportal").setEnabled(true);
+										Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " " + config.getString("traitor-effect.type") + " " + config.getInt("traitor-effect.duration") + config.getInt("traitor-effect.amplifier") +  " -s");
+									} else {
+										for (Player online : Bukkit.getOnlinePlayers()) {
+											online.sendMessage(ChatColor.RED + "Looks like ImuRgency has cucked something up with the badlands portals! Report to an admin.");
+										}
 									}
 								}
-							}
-						}, delay);
+							}, delay);
+						} else {
+							Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " " + config.getString("traitor-effect.type") + " " + config.getInt("traitor-effect.duration") + config.getInt("traitor-effect.amplifier") +  " -s");
+						}
 						Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + player.getName() + " parent add traitor");
+						TraitorsMain.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(TraitorsMain.getInstance(), new Runnable() {
+							public void run() {
+								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " invisibility " + TimeUnit.MINUTES.toSeconds(config.getInt("cooldowns.traitor-grace-period")) + " 1 -s");
+							}
+						}, 100);
 					} catch (IOException e) {
 						player.sendMessage(ChatColor.RED + "Something went wrong! Contact an admin!");
 						e.printStackTrace();
@@ -111,6 +129,7 @@ public class TraitorRun implements CommandExecutor {
 					if (!traitorList.contains(pUUID) || !sender.hasPermission("group.bandit")) {
 						traitors.set(pUUID + ".playtime", playtime);
 						traitors.set(pUUID + ".life", config.getInt("default-lives"));
+						traitors.set(pUUID + ".startdate" , System.currentTimeMillis());
 						int page = 0;
 						for (int i = 0; i < traitorList.size(); ) {
 							ArrayList arr = new ArrayList();
@@ -135,21 +154,41 @@ public class TraitorRun implements CommandExecutor {
 										+ ChatColor.DARK_RED + user.getName() + ChatColor.GRAY + " has betrayed the Kingdom and escaped to"
 										+ ChatColor.DARK_GRAY + " The Badlands" + ChatColor.GRAY + "!" + ChatColor.YELLOW + " Farmers+, "
 										+ ChatColor.GRAY + "hunt them down for " + ChatColor.AQUA + "100k Bounty and Special Tag!");
-								online.sendMessage("");
-								online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
-										+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals are opening in 5 minutes...");
 							}
+							traitors = YamlConfiguration.loadConfiguration(f);
+							traitorList = traitors.getKeys(false);
+							if(traitorList.size() < 2) {
+								for (Player online : Bukkit.getOnlinePlayers()) {
+									online.sendMessage("");
+									online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
+											+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals are opening in " + config.getLong("cooldowns.traitor-grace-period") + " minutes...");
+								}
+								TraitorsMain.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(TraitorsMain.getInstance(), new Runnable() {
+									public void run() {
+										if (CMI.getInstance().getPortalManager().getByName("bhportal") != null || CMI.getInstance().getPortalManager().getByName("nhportal") != null) {
+											for (Player online : Bukkit.getOnlinePlayers()) {
+												online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
+														+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals have " + ChatColor.GREEN + "OPENED");
+											}
+											CMI.getInstance().getPortalManager().getByName("bhportal").setEnabled(true);
+											CMI.getInstance().getPortalManager().getByName("nhportal").setEnabled(true);
+											Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " " + config.getString("traitor-effect.type") + " " + config.getInt("traitor-effect.duration") + config.getInt("traitor-effect.amplifier") +  " -s");
+										} else {
+											for (Player online : Bukkit.getOnlinePlayers()) {
+												online.sendMessage(ChatColor.RED + "Looks like ImuRgency has cucked something up with the badlands portals! Report to an admin.");
+											}
+										}
+									}
+								}, delay);
+							} else {
+								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " " + config.getString("traitor-effect.type") + " " + config.getInt("traitor-effect.duration") + config.getInt("traitor-effect.amplifier") +  " -s");
+							}
+							Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + player.getName() + " parent add traitor");
 							TraitorsMain.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(TraitorsMain.getInstance(), new Runnable() {
 								public void run() {
-									for (Player online : Bukkit.getOnlinePlayers()) {
-										online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
-												+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals have " + ChatColor.GREEN + "OPENED");
-									}
-									CMI.getInstance().getPortalManager().getByName("bhportal").setEnabled(true);
-									CMI.getInstance().getPortalManager().getByName("nhportal").setEnabled(true);
+									Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " invisibility " + TimeUnit.MINUTES.toSeconds(config.getInt("cooldowns.traitor-grace-period")) + " 1 -s");
 								}
-							},delay);
-							Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + player.getName() + " parent add traitor");
+							}, 100);
 						} catch (IOException e) {
 							player.sendMessage(ChatColor.RED + "Something went wrong! Contact an admin!");
 							e.printStackTrace();
@@ -179,9 +218,17 @@ public class TraitorRun implements CommandExecutor {
 											+ ChatColor.AQUA + user.getName() + ChatColor.GRAY + " has " + ChatColor.RED + ChatColor.BOLD + "ESCAPED"
 											+ ChatColor.GRAY + " the kingdom and become a bandit!");
 								}
+								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi warp traitorfinish " + user.getName());
+								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + user.getName() + " parent add bandit");
+								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + user.getName() + " parent add noble");
+								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + user.getName() + " parent remove traitor");
+								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + user.getName() + " permission settemp banitem.bypass.Traitor.ender_chest.interact.* true 5m");
+								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + user.getName() + " permission settemp betterenderchest.user.open.privatechest true 5m");
 							} catch (IOException e) {
 								e.printStackTrace();
 							}
+						} else {
+							Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + OnlinePlayer.getName() + " " + config.getString("traitor-effect.type") + " " + config.getInt("traitor-effect.duration") + config.getInt("traitor-effect.amplifier") +  " -s");
 						}
 					}
 				}

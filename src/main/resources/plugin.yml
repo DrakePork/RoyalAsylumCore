@@ -15,13 +15,16 @@ commands:
     description: Traitor Stuff
     usage: /<command>
     permission: royalasylum.traitor.gui
-    aliases: [ttrack, traitorgui]
     permission-message: §4Error:§c You do not have permission to execute this command...
   traitorcheck:
     description: Traitor Stuff
     usage: /<command>
     permission: royalasylum.traitor.check
-    aliases: [tcheck]
+    permission-message: §4Error:§c You do not have permission to execute this command...
+  ducks:
+    description: Traitor Stuff
+    usage: /<command>
+    permission: royalasylum.ducks
     permission-message: §4Error:§c You do not have permission to execute this command...
 permissions:
   royalasylum.traitor:
@@ -30,3 +33,6 @@ permissions:
     description: Gives you access to /traitortrack command
   royalasylum.traitor.check:
     description: Gives you access to /traitorcheck command
+  royalasylum.ducks:
+    description: Gives you access to /traitorcheck command
+    default: true

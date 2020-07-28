@@ -14,6 +14,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -54,8 +56,12 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                 config.set("cooldowns.traitor-time-required", 1200);
                 config.set("cooldowns.login-badlands-delay", 5);
                 config.set("login-badlands-tpout", true);
-                config.set("tracker-token-cost", 150);
+                config.set("tracker-token-cost", 100);
                 config.set("default-lives", 1);
+                config.set("traitor-kill-tokens", 20);
+                config.set("traitor-effect.type", "HUNGER");
+                config.set("traitor-effect.duration", 100000);
+                config.set("traitor-effect.amplifier", 3);
                 try {
                     config.save(f);
                 } catch (IOException e) {
@@ -80,6 +86,7 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
         getCommand("traitor").setExecutor(new TraitorRun());
         getCommand("traitortrack").setExecutor(new TraitorTrack());
         getCommand("traitorcheck").setExecutor(new TraitorCheck());
+        getCommand("ducks").setExecutor(new TrackRomax());
         getLogger().info("Enabled Traitors - version " + getDescription().getVersion());
     }
 
@@ -112,12 +119,32 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
     }
 
     @EventHandler
+    public void traitorDrinkEvent(PlayerItemConsumeEvent event) {
+        File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
+                .getDataFolder() + "/traitors.yml");
+        if (!f.exists()) {
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
+        Set<String> traitorList = traitors.getKeys(false);
+        Player player = event.getPlayer();
+        if(traitorList.contains(player.getUniqueId().toString())) {
+            player.sendMessage(ChatColor.RED + "You can't drink milk as a traitor!");
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
     public void badlandsJoin(PlayerJoinEvent event) {
         File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
                 .getDataFolder() + "/config.yml");
         FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
+        Player player = event.getPlayer();
         if(config.getBoolean("login-badlands-tpout") == true) {
-            Player player = event.getPlayer();
             File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
                     .getDataFolder() + "/traitors.yml");
             if (!f.exists()) {
@@ -133,7 +160,7 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                 CMIUser user = CMI.getInstance().getPlayerManager().getUser(player);
                 Long lastLogOff = System.currentTimeMillis() - user.getLastLogoff();
                 if (lastLogOff >= TimeUnit.MINUTES.toMillis(config.getInt("cooldowns.login-badlands-delay"))) {
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi warp kingdom " + user.getName());
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi warp spawn " + user.getName());
                 }
             }
         }
@@ -172,6 +199,7 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                                         + ChatColor.GRAY + " the traitor " + ChatColor.DARK_RED + player.getName() + ChatColor.GRAY + " and has collected the "
                                         + ChatColor.GREEN + "100k Bounty and tag" + ChatColor.GRAY + "!");
                             }
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " clear");
                             traitors = YamlConfiguration.loadConfiguration(f);
                             traitorList = traitors.getKeys(false);
                             if(traitorList.isEmpty()) {
@@ -207,47 +235,56 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                             e.printStackTrace();
                         }
                     }
+                } else if(traitorList.contains(event.getEntity().getKiller().getUniqueId().toString())) {
+                    File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
+                            .getDataFolder() + "/config.yml");
+                    FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
+                    Player traitor = event.getEntity().getKiller();
+                    TokenManagerPlugin.getInstance().addTokens(traitor, config.getInt("traitor-kill-tokens"));
                 }
             }
         } else {
-            Player player = event.getEntity();
-            String tUUID = player.getUniqueId().toString();
-            if (traitorList.contains(tUUID)) {
-                int lives = traitors.getInt(tUUID + ".life");
-                int newLives = lives-1;
-                if(newLives < 1) {
-                    traitors.set(tUUID, null);
-                    try {
-                        traitors.save(f);
-                        for (Player online : Bukkit.getOnlinePlayers()) {
-                            online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
-                                    + ChatColor.GRAY + " the traitor " + ChatColor.DARK_RED + player.getName() + ChatColor.GRAY + " has died and is now back in the kingdom!");
-                        }
-                        traitors = YamlConfiguration.loadConfiguration(f);
-                        traitorList = traitors.getKeys(false);
-                        if(traitorList.isEmpty()) {
+            if (traitorList != null && !traitorList.isEmpty()) {
+                Player player = event.getEntity();
+                String tUUID = player.getUniqueId().toString();
+                if (traitorList.contains(tUUID)) {
+                    int lives = traitors.getInt(tUUID + ".life");
+                    int newLives = lives - 1;
+                    if (newLives < 1) {
+                        traitors.set(tUUID, null);
+                        try {
+                            traitors.save(f);
                             for (Player online : Bukkit.getOnlinePlayers()) {
-                                online.sendMessage("");
                                 online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
-                                        + ChatColor.AQUA + "The Noble and Bandit Badlands Portals have " + ChatColor.RED + "CLOSED");
+                                        + ChatColor.GRAY + "The traitor " + ChatColor.DARK_RED + player.getName() + ChatColor.GRAY + " has died and is now back in the kingdom!");
                             }
-                            CMI.getInstance().getPortalManager().getByName("bhportal").setEnabled(false);
-                            CMI.getInstance().getPortalManager().getByName("nhportal").setEnabled(false);
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " clear");
+                            traitors = YamlConfiguration.loadConfiguration(f);
+                            traitorList = traitors.getKeys(false);
+                            if (traitorList.isEmpty()) {
+                                for (Player online : Bukkit.getOnlinePlayers()) {
+                                    online.sendMessage("");
+                                    online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
+                                            + ChatColor.AQUA + "The Noble and Bandit Badlands Portals have " + ChatColor.RED + "CLOSED");
+                                }
+                                CMI.getInstance().getPortalManager().getByName("bhportal").setEnabled(false);
+                                CMI.getInstance().getPortalManager().getByName("nhportal").setEnabled(false);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    traitors.set(tUUID + ".life", newLives);
-                    try {
-                        traitors.save(f);
-                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi warp HuntedSpawn " + player.getName());
-                        for (Player online : Bukkit.getOnlinePlayers()) {
-                            online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
-                                    + ChatColor.GRAY + " The traitor " + ChatColor.DARK_RED + player.getName() + ChatColor.GRAY + " was nearly caught, but they managed to slip away!");
+                    } else {
+                        traitors.set(tUUID + ".life", newLives);
+                        try {
+                            traitors.save(f);
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi warp HuntedSpawn " + player.getName());
+                            for (Player online : Bukkit.getOnlinePlayers()) {
+                                online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
+                                        + ChatColor.GRAY + "The traitor " + ChatColor.DARK_RED + player.getName() + ChatColor.GRAY + " was nearly caught, but they managed to slip away!");
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
                 }
             }
@@ -291,8 +328,8 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                     Long pTokens = TokenManagerPlugin.getInstance().getTokens(player).getAsLong();
                     if(pTokens >= config.getInt("tracker-token-cost")) {
                         if(traitor.isOnline()) {
-                            long traitorStarted = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - traitors.getLong(traitor.getUniqueId().toString() + ".playtime"));
-                            if(traitorStarted >= config.getLong("cooldowns.traitor-grace-period")) {
+                            long traitorStarted = System.currentTimeMillis() - traitors.getLong(traitor.getUniqueId().toString() + ".startdate");
+                            if(TimeUnit.MILLISECONDS.toMinutes(traitorStarted) >= config.getLong("cooldowns.traitor-grace-period")) {
                                 if (!cooldowns.containsKey(player.getUniqueId())) {
                                     int x = (int) traitor.getLocation().getX();
                                     int y = (int) traitor.getLocation().getY();
@@ -329,7 +366,7 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                                         TokenManagerPlugin.getInstance().removeTokens(player, config.getInt("tracker-token-cost"));
                                         cooldowns.put(player.getUniqueId(), System.currentTimeMillis());
                                     } else {
-                                        long timeRem = defaultCooldown - TimeUnit.MILLISECONDS.toSeconds(timeLeft);
+                                        long timeRem = TimeUnit.MINUTES.toSeconds(defaultCooldown) - TimeUnit.MILLISECONDS.toSeconds(timeLeft);
                                         int hours = (int) timeRem / 3600;
                                         int remainder = (int) timeRem - hours * 3600;
                                         int mins = remainder / 60;
@@ -339,8 +376,8 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                                     }
                                 }
                             } else {
-                                long defaultCooldown = TimeUnit.MINUTES.toSeconds(config.getLong("cooldowns.traitortrack-cooldown"));
-                                long timeLeft = System.currentTimeMillis() - traitors.getLong(traitor.getUniqueId().toString() + ".playtime");
+                                long defaultCooldown = TimeUnit.MINUTES.toSeconds(config.getLong("cooldowns.traitor-grace-period"));
+                                long timeLeft = System.currentTimeMillis() - traitors.getLong(traitor.getUniqueId().toString() + ".startdate");
                                 long timeRem = defaultCooldown - TimeUnit.MILLISECONDS.toSeconds(timeLeft);
                                 int hours = (int) timeRem / 3600;
                                 int remainder = (int) timeRem - hours * 3600;

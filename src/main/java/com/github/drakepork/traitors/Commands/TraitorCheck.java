@@ -33,7 +33,7 @@ public class TraitorCheck implements CommandExecutor {
 					int lives = traitors.getInt(player.getUniqueId().toString() + ".life");
 					Long currPlaytime = user.getTotalPlayTime();
 					Long remPlaytime = currPlaytime - iniPlaytime;
-					long timeRem = (TimeUnit.MINUTES.toMillis(config.getLong("traitor-time-required")) - remPlaytime) / 1000;
+					long timeRem = (TimeUnit.MINUTES.toMillis(config.getLong("cooldowns.traitor-time-required")) - remPlaytime) / 1000;
 					int hours = (int) timeRem / 3600;
 					int remainder = (int) timeRem - hours * 3600;
 					int mins = remainder / 60;
@@ -56,7 +56,7 @@ public class TraitorCheck implements CommandExecutor {
 						int lives = traitors.getInt(player.getUniqueId().toString() + ".life");
 						Long currPlaytime = user.getTotalPlayTime();
 						Long remPlaytime = currPlaytime - iniPlaytime;
-						long timeRem = (TimeUnit.MINUTES.toMillis(config.getLong("traitor-time-required")) - remPlaytime) / 1000;
+						long timeRem = (TimeUnit.MINUTES.toMillis(config.getLong("cooldowns.traitor-time-required")) - remPlaytime) / 1000;
 						int hours = (int) timeRem / 3600;
 						int remainder = (int) timeRem - hours * 3600;
 						int mins = remainder / 60;
