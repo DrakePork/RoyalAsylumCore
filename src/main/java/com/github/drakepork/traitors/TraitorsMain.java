@@ -14,7 +14,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -59,6 +58,10 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                 config.set("tracker-token-cost", 100);
                 config.set("default-lives", 1);
                 config.set("traitor-kill-tokens", 20);
+                config.set("hunter-kill-prize.money", 250000);
+                config.set("hunter-kill-prize.money-extra-life", 50000);
+                config.set("hunter-kill-prize.tokens", 500);
+                config.set("hunter-kill-prize.tokens-extra-life", 250);
                 config.set("traitor-effect.type", "HUNGER");
                 config.set("traitor-effect.duration", 100000);
                 config.set("traitor-effect.amplifier", 3);
@@ -71,6 +74,7 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                 e.printStackTrace();
             }
         }
+
 
         f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
                 .getDataFolder() + "/traitors.yml");
@@ -86,7 +90,6 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
         getCommand("traitor").setExecutor(new TraitorRun());
         getCommand("traitortrack").setExecutor(new TraitorTrack());
         getCommand("traitorcheck").setExecutor(new TraitorCheck());
-        getCommand("ducks").setExecutor(new TrackRomax());
         getLogger().info("Enabled Traitors - version " + getDescription().getVersion());
     }
 
@@ -120,21 +123,23 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
 
     @EventHandler
     public void traitorDrinkEvent(PlayerItemConsumeEvent event) {
-        File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                .getDataFolder() + "/traitors.yml");
-        if (!f.exists()) {
-            try {
-                f.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
+        if(event.getItem().equals(Material.MILK_BUCKET)) {
+            File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
+                    .getDataFolder() + "/traitors.yml");
+            if (!f.exists()) {
+                try {
+                    f.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-        }
-        FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
-        Set<String> traitorList = traitors.getKeys(false);
-        Player player = event.getPlayer();
-        if(traitorList.contains(player.getUniqueId().toString())) {
-            player.sendMessage(ChatColor.RED + "You can't drink milk as a traitor!");
-            event.setCancelled(true);
+            FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
+            Set<String> traitorList = traitors.getKeys(false);
+            Player player = event.getPlayer();
+            if (traitorList.contains(player.getUniqueId().toString())) {
+                player.sendMessage(ChatColor.RED + "You can't drink milk as a traitor!");
+                event.setCancelled(true);
+            }
         }
     }
 
@@ -177,6 +182,9 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                 e.printStackTrace();
             }
         }
+        File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
+                .getDataFolder() + "/config.yml");
+        FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
         FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
         Set<String> traitorList = traitors.getKeys(false);
         if (event.getEntity().getKiller() instanceof Player) {
@@ -191,26 +199,27 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                         try {
                             traitors.save(f);
                             CMIUser killer = CMI.getInstance().getPlayerManager().getUser(event.getEntity().getKiller());
-                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi money give " + killer.getName() + " 100000");
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi money give " + killer.getName() + " " + config.getInt("hunter-kill-prize.money"));
                             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + killer.getName() + " permission set deluxetags.tag.loyalist");
+                            TokenManagerPlugin.getInstance().addTokens(event.getEntity().getKiller(), config.getInt("hunter-kill-prize.tokens"));
                             for (Player online : Bukkit.getOnlinePlayers()) {
                                 online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
                                         + ChatColor.AQUA + killer.getName() + ChatColor.GRAY + " has " + ChatColor.RED + ChatColor.BOLD + "CAUGHT"
                                         + ChatColor.GRAY + " the traitor " + ChatColor.DARK_RED + player.getName() + ChatColor.GRAY + " and has collected the "
-                                        + ChatColor.GREEN + "100k Bounty and tag" + ChatColor.GRAY + "!");
+                                        + ChatColor.GREEN + config.getInt("hunter-kill-prize-money") + " Bounty and tag" + ChatColor.GRAY + "!");
                             }
                             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " clear");
                             traitors = YamlConfiguration.loadConfiguration(f);
                             traitorList = traitors.getKeys(false);
                             if(traitorList.isEmpty()) {
-                                if(CMI.getInstance().getPortalManager().getByName("bhportal") != null || CMI.getInstance().getPortalManager().getByName("nhportal") != null) {
+                                if(CMI.getInstance().getPortalManager().getByName("BHPortal") != null || CMI.getInstance().getPortalManager().getByName("NHPortal") != null) {
                                     for (Player online : Bukkit.getOnlinePlayers()) {
                                         online.sendMessage("");
                                         online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
                                                 + ChatColor.AQUA + "The Noble and Bandit Badlands Portals have " + ChatColor.RED + "CLOSED");
                                     }
-                                    CMI.getInstance().getPortalManager().getByName("bhportal").setEnabled(false);
-                                    CMI.getInstance().getPortalManager().getByName("nhportal").setEnabled(false);
+                                    CMI.getInstance().getPortalManager().getByName("BHPortal").setEnabled(false);
+                                    CMI.getInstance().getPortalManager().getByName("NHPortal").setEnabled(false);
                                 } else {
                                     for (Player online : Bukkit.getOnlinePlayers()) {
                                         online.sendMessage(ChatColor.RED + "Looks like ImuRgency has cucked something up with the badlands portals! Report to an admin.");
@@ -225,20 +234,18 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                         try {
                             traitors.save(f);
                             CMIUser killer = CMI.getInstance().getPlayerManager().getUser(event.getEntity().getKiller());
-                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi money give " + killer.getName() + " 50000");
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi money give " + killer.getName() +  " " + config.getInt("hunter-kill-prize.money-extra-life"));
+                            TokenManagerPlugin.getInstance().addTokens(event.getEntity().getKiller(), config.getInt("hunter-kill-prize.tokens-extra-life"));
                             for (Player online : Bukkit.getOnlinePlayers()) {
                                 online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
                                         + ChatColor.AQUA + killer.getName() + ChatColor.GRAY + " nearly caught the traitor " + ChatColor.DARK_RED + player.getName() + ChatColor.GRAY + ", but they managed to slip away. "
-                                        + ChatColor.AQUA + killer.getName() + ChatColor.GRAY + " receives " + ChatColor.GREEN + "50k" + ChatColor.GRAY + " for nearly capturing the traitor!");
+                                        + ChatColor.AQUA + killer.getName() + ChatColor.GRAY + " receives " + ChatColor.GREEN + config.getInt("hunter-kill-prize-money-extra-life") + ChatColor.GRAY + " for nearly capturing the traitor!");
                             }
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
                     }
                 } else if(traitorList.contains(event.getEntity().getKiller().getUniqueId().toString())) {
-                    File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                            .getDataFolder() + "/config.yml");
-                    FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
                     Player traitor = event.getEntity().getKiller();
                     TokenManagerPlugin.getInstance().addTokens(traitor, config.getInt("traitor-kill-tokens"));
                 }
@@ -267,8 +274,8 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                                     online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
                                             + ChatColor.AQUA + "The Noble and Bandit Badlands Portals have " + ChatColor.RED + "CLOSED");
                                 }
-                                CMI.getInstance().getPortalManager().getByName("bhportal").setEnabled(false);
-                                CMI.getInstance().getPortalManager().getByName("nhportal").setEnabled(false);
+                                CMI.getInstance().getPortalManager().getByName("BHPortal").setEnabled(false);
+                                CMI.getInstance().getPortalManager().getByName("NHPortal").setEnabled(false);
                             }
                         } catch (IOException e) {
                             e.printStackTrace();

@@ -41,7 +41,6 @@ public class TraitorRun implements CommandExecutor {
 		Set<String> traitorList = traitors.getKeys(false);
 		Long delay = (config.getLong("cooldowns.traitor-grace-period")*60)*20;
 		if (args.length < 1) {
-			sender.sendMessage(ChatColor.RED + "/traitor add/admincheck");
 		} else if (args[0].equalsIgnoreCase("add")) {
 			if (sender instanceof Player) {
 				Player player = (Player) sender;
@@ -87,13 +86,13 @@ public class TraitorRun implements CommandExecutor {
 							}
 							TraitorsMain.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(TraitorsMain.getInstance(), new Runnable() {
 								public void run() {
-									if (CMI.getInstance().getPortalManager().getByName("bhportal") != null || CMI.getInstance().getPortalManager().getByName("nhportal") != null) {
+									if (CMI.getInstance().getPortalManager().getByName("BHPortal") != null || CMI.getInstance().getPortalManager().getByName("NHPortal") != null) {
 										for (Player online : Bukkit.getOnlinePlayers()) {
 											online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
 													+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals have " + ChatColor.GREEN + "OPENED");
 										}
-										CMI.getInstance().getPortalManager().getByName("bhportal").setEnabled(true);
-										CMI.getInstance().getPortalManager().getByName("nhportal").setEnabled(true);
+										CMI.getInstance().getPortalManager().getByName("BHPortal").setEnabled(true);
+										CMI.getInstance().getPortalManager().getByName("NHPortal").setEnabled(true);
 										Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " " + config.getString("traitor-effect.type") + " " + config.getInt("traitor-effect.duration") + config.getInt("traitor-effect.amplifier") +  " -s");
 									} else {
 										for (Player online : Bukkit.getOnlinePlayers()) {
@@ -165,13 +164,13 @@ public class TraitorRun implements CommandExecutor {
 								}
 								TraitorsMain.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(TraitorsMain.getInstance(), new Runnable() {
 									public void run() {
-										if (CMI.getInstance().getPortalManager().getByName("bhportal") != null || CMI.getInstance().getPortalManager().getByName("nhportal") != null) {
+										if (CMI.getInstance().getPortalManager().getByName("BHPortal") != null || CMI.getInstance().getPortalManager().getByName("NHPortal") != null) {
 											for (Player online : Bukkit.getOnlinePlayers()) {
 												online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
 														+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals have " + ChatColor.GREEN + "OPENED");
 											}
-											CMI.getInstance().getPortalManager().getByName("bhportal").setEnabled(true);
-											CMI.getInstance().getPortalManager().getByName("nhportal").setEnabled(true);
+											CMI.getInstance().getPortalManager().getByName("BHPortal").setEnabled(true);
+											CMI.getInstance().getPortalManager().getByName("NHPortal").setEnabled(true);
 											Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " " + config.getString("traitor-effect.type") + " " + config.getInt("traitor-effect.duration") + config.getInt("traitor-effect.amplifier") +  " -s");
 										} else {
 											for (Player online : Bukkit.getOnlinePlayers()) {
