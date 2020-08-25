@@ -21,9 +21,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public final class TraitorsMain extends JavaPlugin implements Listener {
@@ -65,6 +63,9 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                 config.set("traitor-effect.type", "HUNGER");
                 config.set("traitor-effect.duration", 100000);
                 config.set("traitor-effect.amplifier", 3);
+                ArrayList list = new ArrayList();
+                list.add("group.test:100");
+                config.set("token-group-kill-rewards", list);
                 try {
                     config.save(f);
                 } catch (IOException e) {
@@ -188,6 +189,23 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
         FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
         Set<String> traitorList = traitors.getKeys(false);
         if (event.getEntity().getKiller() instanceof Player) {
+            ArrayList stabList = (ArrayList) config.getStringList("token-group-kill-rewards");
+            if(!stabList.isEmpty()) {
+                Player killer = event.getEntity().getKiller();
+                Player killed = event.getEntity();
+                ArrayList tokens = new ArrayList();
+                for(Object stabStuff : stabList) {
+                    String stabs = stabStuff.toString();
+                    String[] wham = stabs.split(":");
+                    if(killed.hasPermission(wham[0])) {
+                        tokens.add(Integer.valueOf(wham[1]));
+                    }
+                }
+                int tokenReward = (int) Collections.max(tokens);
+                TokenManagerPlugin.getInstance().addTokens(killer, tokenReward);
+                killer.sendMessage(ChatColor.DARK_PURPLE + "Tokens" + ChatColor.DARK_GRAY + " » " + ChatColor.AQUA + tokenReward + " tokens "
+                        + ChatColor.GRAY + "has been added to your balance.");
+            }
             if (traitorList != null && !traitorList.isEmpty()) {
                 Player player = event.getEntity();
                 String tUUID = player.getUniqueId().toString();

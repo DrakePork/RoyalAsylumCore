@@ -49,12 +49,11 @@ public class TraitorCheck implements CommandExecutor {
 				}
 			} else {
 				if(CMI.getInstance().getPlayerManager().getUser(args[0]) != null) {
-					Player player = Bukkit.getPlayer(args[0]);
+					CMIUser player  = CMI.getInstance().getPlayerManager().getUser(args[0]);
 					if (traitorList.contains(player.getUniqueId().toString())) {
-						CMIUser user = CMI.getInstance().getPlayerManager().getUser(player);
 						Long iniPlaytime = traitors.getLong(player.getUniqueId().toString() + ".playtime");
 						int lives = traitors.getInt(player.getUniqueId().toString() + ".life");
-						Long currPlaytime = user.getTotalPlayTime();
+						Long currPlaytime = player.getTotalPlayTime();
 						Long remPlaytime = currPlaytime - iniPlaytime;
 						long timeRem = (TimeUnit.MINUTES.toMillis(config.getLong("cooldowns.traitor-time-required")) - remPlaytime) / 1000;
 						int hours = (int) timeRem / 3600;
@@ -79,12 +78,11 @@ public class TraitorCheck implements CommandExecutor {
 				sender.sendMessage(ChatColor.RED + "/traitorcheck <player>");
 			} else {
 				if(CMI.getInstance().getPlayerManager().getUser(args[0]) != null) {
-					Player player = Bukkit.getPlayer(args[0]);
+					CMIUser player = CMI.getInstance().getPlayerManager().getUser(args[0]);
 					if (traitorList.contains(player.getUniqueId().toString())) {
-						CMIUser user = CMI.getInstance().getPlayerManager().getUser(player);
 						Long iniPlaytime = traitors.getLong(player.getUniqueId().toString() + ".playtime");
 						int lives = traitors.getInt(player.getUniqueId().toString() + ".life");
-						Long currPlaytime = user.getTotalPlayTime();
+						Long currPlaytime = player.getTotalPlayTime();
 						Long remPlaytime = currPlaytime - iniPlaytime;
 						long timeRem = (TimeUnit.MINUTES.toMillis(config.getLong("traitor-time-required")) - remPlaytime) / 1000;
 						int hours = (int) timeRem / 3600;
