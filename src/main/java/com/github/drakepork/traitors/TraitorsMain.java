@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 public final class TraitorsMain extends JavaPlugin implements Listener {
     public HashMap<UUID, Long> cooldowns = new HashMap<>();
+    public HashMap<UUID, Long> killCooldowns = new HashMap<>();
     private static TraitorsMain instance;
 
     public static TraitorsMain getInstance() {
@@ -65,6 +66,7 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                 config.set("traitor-effect.amplifier", 3);
                 ArrayList list = new ArrayList();
                 list.add("group.test:100");
+                config.set("token-kill-delay", 15);
                 config.set("token-group-kill-rewards", list);
                 try {
                     config.save(f);
@@ -193,18 +195,47 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
             if(!stabList.isEmpty()) {
                 Player killer = event.getEntity().getKiller();
                 Player killed = event.getEntity();
-                ArrayList tokens = new ArrayList();
-                for(Object stabStuff : stabList) {
-                    String stabs = stabStuff.toString();
-                    String[] wham = stabs.split(":");
-                    if(killed.hasPermission(wham[0])) {
-                        tokens.add(Integer.valueOf(wham[1]));
+                CMIUser userK = CMI.getInstance().getPlayerManager().getUser(killer);
+                CMIUser userD = CMI.getInstance().getPlayerManager().getUser(killed);
+                if(!userD.getLastIp().equalsIgnoreCase(userK.getLastIp())) {
+                    if (!killCooldowns.containsKey(killer.getUniqueId())) {
+                        ArrayList tokens = new ArrayList();
+                        for (Object stabStuff : stabList) {
+                            String stabs = stabStuff.toString();
+                            String[] wham = stabs.split(":");
+                            if (killed.hasPermission(wham[0])) {
+                                tokens.add(Integer.valueOf(wham[1]));
+                                killCooldowns.put(killer.getUniqueId(), System.currentTimeMillis());
+                            }
+                        }
+                        if(!tokens.isEmpty() && tokens != null) {
+                            int tokenReward = (int) Collections.max(tokens);
+                            TokenManagerPlugin.getInstance().addTokens(killer, tokenReward);
+                            killer.sendMessage(ChatColor.DARK_PURPLE + "Tokens" + ChatColor.DARK_GRAY + " » " + ChatColor.AQUA + tokenReward + " tokens "
+                                    + ChatColor.GRAY + "has been added to your balance.");
+                        }
+                    } else {
+                        long defaultCooldown = config.getLong("token-kill-delay");
+                        long timeLeft = System.currentTimeMillis() - killCooldowns.get(killer.getUniqueId());
+                        if (TimeUnit.MILLISECONDS.toSeconds(timeLeft) >= defaultCooldown) {
+                            ArrayList tokens = new ArrayList();
+                            for (Object stabStuff : stabList) {
+                                String stabs = stabStuff.toString();
+                                String[] wham = stabs.split(":");
+                                if (killed.hasPermission(wham[0])) {
+                                    tokens.add(Integer.valueOf(wham[1]));
+                                    killCooldowns.put(killer.getUniqueId(), System.currentTimeMillis());
+                                }
+                            }
+                            if(!tokens.isEmpty() && tokens != null) {
+                                int tokenReward = (int) Collections.max(tokens);
+                                TokenManagerPlugin.getInstance().addTokens(killer, tokenReward);
+                                killer.sendMessage(ChatColor.DARK_PURPLE + "Tokens" + ChatColor.DARK_GRAY + " » " + ChatColor.AQUA + tokenReward + " tokens "
+                                        + ChatColor.GRAY + "has been added to your balance.");
+                            }
+                        }
                     }
                 }
-                int tokenReward = (int) Collections.max(tokens);
-                TokenManagerPlugin.getInstance().addTokens(killer, tokenReward);
-                killer.sendMessage(ChatColor.DARK_PURPLE + "Tokens" + ChatColor.DARK_GRAY + " » " + ChatColor.AQUA + tokenReward + " tokens "
-                        + ChatColor.GRAY + "has been added to your balance.");
             }
             if (traitorList != null && !traitorList.isEmpty()) {
                 Player player = event.getEntity();
