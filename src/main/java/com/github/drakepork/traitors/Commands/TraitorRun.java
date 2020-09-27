@@ -218,7 +218,7 @@ public class TraitorRun implements CommandExecutor {
 											+ ChatColor.GRAY + " the kingdom and become a bandit!");
 								}
 								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi warp traitorfinish " + user.getName());
-								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + user.getName() + " parent add bandit");
+								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + user.getName() + " parent add outlaw");
 								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + user.getName() + " parent add noble");
 								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + user.getName() + " parent remove traitor");
 								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + user.getName() + " permission settemp banitem.bypass.Traitor.ender_chest.interact.* true 5m");

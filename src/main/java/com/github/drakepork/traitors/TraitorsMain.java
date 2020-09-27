@@ -478,6 +478,9 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                                     }
                                 }
                                 TokenManagerPlugin.getInstance().removeTokens(player, config.getInt("track-cost.global-token-cost"));
+                                player.sendMessage(ChatColor.DARK_PURPLE + "Tokens" + ChatColor.DARK_GRAY + " » "
+                                        + ChatColor.AQUA + config.getInt("track-cost.global-token-cost") + " tokens "
+                                        + ChatColor.GRAY + "has been removed from your balance.");
                                 gCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
                                 player.closeInventory();
                             } else {
@@ -498,6 +501,9 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                                         }
                                     }
                                     TokenManagerPlugin.getInstance().removeTokens(player, config.getInt("track-cost.global-token-cost"));
+                                    player.sendMessage(ChatColor.DARK_PURPLE + "Tokens" + ChatColor.DARK_GRAY + " » "
+                                            + ChatColor.AQUA + config.getInt("track-cost.global-token-cost") + " tokens "
+                                            + ChatColor.GRAY + "has been removed from your balance.");
                                     gCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
                                     player.closeInventory();
                                 } else {
@@ -527,6 +533,9 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                             traitor.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
                                     + ChatColor.RED + "" + ChatColor.BOLD + "Your location has been revealed!");
                             TokenManagerPlugin.getInstance().removeTokens(player, config.getInt("track-cost.personal-token-cost"));
+                            player.sendMessage(ChatColor.DARK_PURPLE + "Tokens" + ChatColor.DARK_GRAY + " » "
+                                    + ChatColor.AQUA + config.getInt("track-cost.personal-token-cost") + " tokens "
+                                    + ChatColor.GRAY + "has been removed from your balance.");
                             pCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
                             player.closeInventory();
                         } else {
@@ -542,6 +551,9 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                                 traitor.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
                                         + ChatColor.RED + "" + ChatColor.BOLD + "Your location has been revealed!");
                                 TokenManagerPlugin.getInstance().removeTokens(player, config.getInt("track-cost.personal-token-cost"));
+                                player.sendMessage(ChatColor.DARK_PURPLE + "Tokens" + ChatColor.DARK_GRAY + " » "
+                                        + ChatColor.AQUA + config.getInt("track-cost.personal-token-cost") + " tokens "
+                                        + ChatColor.GRAY + "has been removed from your balance.");
                                 pCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
                                 player.closeInventory();
                             } else {
