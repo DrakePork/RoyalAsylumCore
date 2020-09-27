@@ -528,7 +528,7 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                             int y = (int) traitor.getLocation().getY();
                             int z = (int) traitor.getLocation().getZ();
                             player.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
-                                    + ChatColor.GRAY + "The coords to " + ChatColor.RED + traitor.getName() + " is "
+                                    + ChatColor.GRAY + "The coords to " + ChatColor.RED + traitor.getName() + ChatColor.GRAY + " is "
                                     + ChatColor.YELLOW + "(X: " + x + " Y: " + y + " Z: " + z + ")");
                             traitor.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
                                     + ChatColor.RED + "" + ChatColor.BOLD + "Your location has been revealed!");
@@ -546,7 +546,7 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                                 int y = (int) traitor.getLocation().getY();
                                 int z = (int) traitor.getLocation().getZ();
                                 player.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
-                                        + ChatColor.GRAY + "The coords to " + ChatColor.RED + traitor.getName() + " is "
+                                        + ChatColor.GRAY + "The coords to " + ChatColor.RED + traitor.getName() + ChatColor.GRAY + " is "
                                         + ChatColor.YELLOW + "(X: " + x + " Y: " + y + " Z: " + z + ")");
                                 traitor.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
                                         + ChatColor.RED + "" + ChatColor.BOLD + "Your location has been revealed!");
