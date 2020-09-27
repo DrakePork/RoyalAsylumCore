@@ -25,7 +25,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public final class TraitorsMain extends JavaPlugin implements Listener {
-    public HashMap<UUID, Long> cooldowns = new HashMap<>();
+    public HashMap<UUID, Long> gCooldowns = new HashMap<>();
+    public HashMap<UUID, Long> pCooldowns = new HashMap<>();
     public HashMap<UUID, Long> killCooldowns = new HashMap<>();
     private static TraitorsMain instance;
 
@@ -49,12 +50,16 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
             try {
                 f.createNewFile();
                 FileConfiguration config = YamlConfiguration.loadConfiguration(f);
-                config.set("cooldowns.traitortrack-cooldown", 30);
+                config.set("cooldowns.traitortrack-personal-cooldown", 30);
+                config.set("cooldowns.traitortrack-global-cooldown", 30);
                 config.set("cooldowns.traitor-grace-period", 10);
                 config.set("cooldowns.traitor-time-required", 1200);
                 config.set("cooldowns.login-badlands-delay", 5);
                 config.set("login-badlands-tpout", true);
                 config.set("tracker-token-cost", 100);
+                config.set("track-cost.personal-token-cost", 100);
+                config.set("track-cost.global-token-cost", 100);
+                config.set("track-cost.global-money-cost", 5000);
                 config.set("default-lives", 1);
                 config.set("traitor-kill-tokens", 20);
                 config.set("hunter-kill-prize.money", 250000);
@@ -65,7 +70,7 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                 config.set("traitor-effect.duration", 100000);
                 config.set("traitor-effect.amplifier", 3);
                 ArrayList list = new ArrayList();
-                list.add("group.test:100");
+                list.add("group.default:100");
                 config.set("token-kill-delay", 15);
                 config.set("token-group-kill-rewards", list);
                 try {
@@ -349,17 +354,11 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
 
     private final TraitorTrack TraitorTrackCommand = new TraitorTrack();
 
+
     @EventHandler
     public void invClick(InventoryClickEvent event) {
         File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
                 .getDataFolder() + "/traitors.yml");
-        if (!f.exists()) {
-            try {
-                f.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
         FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
         File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
                 .getDataFolder() + "/config.yml");
@@ -368,30 +367,75 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
         if(traitorTitle[0].equalsIgnoreCase("Traitors")) {
             if (event.getCurrentItem() != null) {
                 event.setCancelled(true);
+                Player player = (Player) event.getWhoClicked();
                 if(event.getCurrentItem().getType() == Material.PAPER) {
                     if(event.getSlot() == 46) {
                         int page = Integer.parseInt(traitorTitle[4])-1;
-                        TraitorTrackCommand.openGUI((Player) event.getWhoClicked(), page);
+                        TraitorTrackCommand.openGUI(player, page);
                     } else if(event.getSlot() == 52) {
                         int page = Integer.parseInt(traitorTitle[4])+1;
-                        TraitorTrackCommand.openGUI((Player) event.getWhoClicked(), page);
+                        TraitorTrackCommand.openGUI(player, page);
                     }
                 } else if(event.getCurrentItem().getType() == Material.PLAYER_HEAD) {
-                    Player player = (Player) event.getWhoClicked();
                     String iName = ChatColor.stripColor(event.getCurrentItem().getItemMeta().getDisplayName());
                     Player pTraitor = Bukkit.getPlayer(iName);
                     CMIUser traitor = CMI.getInstance().getPlayerManager().getUser(iName);
-                    Long pTokens = TokenManagerPlugin.getInstance().getTokens(player).getAsLong();
-                    if(pTokens >= config.getInt("tracker-token-cost")) {
-                        if(traitor.isOnline()) {
-                            long traitorStarted = System.currentTimeMillis() - traitors.getLong(traitor.getUniqueId().toString() + ".startdate");
-                            if(TimeUnit.MILLISECONDS.toMinutes(traitorStarted) >= config.getLong("cooldowns.traitor-grace-period")) {
-                                if (!cooldowns.containsKey(player.getUniqueId())) {
+                    if(traitor.isOnline()) {
+                        long traitorStarted = System.currentTimeMillis() - traitors.getLong(traitor.getUniqueId().toString() + ".startdate");
+                        if(TimeUnit.MILLISECONDS.toMinutes(traitorStarted) >= config.getLong("cooldowns.traitor-grace-period")) {
+                            TraitorTrackCommand.chooseType(player, pTraitor);
+                        } else {
+                            long defaultCooldown = TimeUnit.MINUTES.toSeconds(config.getLong("cooldowns.traitor-grace-period"));
+                            long timeLeft = System.currentTimeMillis() - traitors.getLong(traitor.getUniqueId().toString() + ".startdate");
+                            long timeRem = defaultCooldown - TimeUnit.MILLISECONDS.toSeconds(timeLeft);
+                            int hours = (int) timeRem / 3600;
+                            int remainder = (int) timeRem - hours * 3600;
+                            int mins = remainder / 60;
+                            remainder = remainder - mins * 60;
+                            int secs = remainder;
+                            player.sendMessage(ChatColor.RED + "You have to wait " + mins + "m " + secs + "s before you can use this.");
+                        }
+                    } else {
+                        player.sendMessage(ChatColor.RED + "You can't track " + traitor.getName() + " when they're offline!");
+                    }
+                }
+            }
+        } else if(traitorTitle[0].equalsIgnoreCase("Tracking:")) {
+            if (event.getCurrentItem() != null) {
+                event.setCancelled(true);
+                Player player = (Player) event.getWhoClicked();
+                Player traitor = Bukkit.getPlayer(ChatColor.stripColor(traitorTitle[1]));
+                if(event.getSlot() == 11) {
+                    if(event.getClick().isLeftClick() == true) {
+                        CMIUser user = CMI.getInstance().getPlayerManager().getUser(player);
+                        Double pMoney = user.getBalance();
+                        if(pMoney >= config.getDouble("track-cost.global-money-cost")) {
+                            if (!gCooldowns.containsKey(player.getUniqueId())) {
+                                int x = (int) traitor.getLocation().getX();
+                                int y = (int) traitor.getLocation().getY();
+                                int z = (int) traitor.getLocation().getZ();
+                                for (Player online : Bukkit.getOnlinePlayers()) {
+                                    if (!online.equals(traitor)) {
+                                        online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
+                                                + ChatColor.GRAY + "A traitors coords has been revealed "
+                                                + ChatColor.YELLOW + "(X: " + x + " Y: " + y + " Z: " + z + ")");
+                                    } else {
+                                        traitor.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
+                                                + ChatColor.RED + "" + ChatColor.BOLD + "Your location has been revealed!");
+                                    }
+                                }
+                                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi money take " + player.getName() + " " + config.getInt("track-cost.global-money-cost"));
+                                gCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+                                player.closeInventory();
+                            } else {
+                                long defaultCooldown = config.getLong("cooldowns.traitortrack-global-cooldown");
+                                long timeLeft = System.currentTimeMillis() - gCooldowns.get(player.getUniqueId());
+                                if (TimeUnit.MILLISECONDS.toMinutes(timeLeft) >= defaultCooldown) {
                                     int x = (int) traitor.getLocation().getX();
                                     int y = (int) traitor.getLocation().getY();
                                     int z = (int) traitor.getLocation().getZ();
                                     for (Player online : Bukkit.getOnlinePlayers()) {
-                                        if (!online.equals(pTraitor)) {
+                                        if (!online.equals(traitor)) {
                                             online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
                                                     + ChatColor.GRAY + "A traitors coords has been revealed "
                                                     + ChatColor.YELLOW + "(X: " + x + " Y: " + y + " Z: " + z + ")");
@@ -400,50 +444,115 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                                                     + ChatColor.RED + "" + ChatColor.BOLD + "Your location has been revealed!");
                                         }
                                     }
-                                    TokenManagerPlugin.getInstance().removeTokens(player, config.getInt("tracker-token-cost"));
-                                    cooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+                                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi money take " + player.getName() + " " + config.getInt("track-cost.global-money-cost"));
+                                    gCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+                                    player.closeInventory();
                                 } else {
-                                    long defaultCooldown = config.getLong("cooldowns.traitortrack-cooldown");
-                                    long timeLeft = System.currentTimeMillis() - cooldowns.get(player.getUniqueId());
-                                    if (TimeUnit.MILLISECONDS.toMinutes(timeLeft) >= defaultCooldown) {
-                                        int x = (int) traitor.getLocation().getX();
-                                        int y = (int) traitor.getLocation().getY();
-                                        int z = (int) traitor.getLocation().getZ();
-                                        for (Player online : Bukkit.getOnlinePlayers()) {
-                                            if (!online.equals(pTraitor)) {
-                                                online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
-                                                        + ChatColor.GRAY + "A traitors coords has been revealed "
-                                                        + ChatColor.YELLOW + "(X: " + x + " Y: " + y + " Z: " + z + ")");
-                                            } else {
-                                                traitor.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
-                                                        + ChatColor.RED + "" + ChatColor.BOLD + "Your location has been revealed!");
-                                            }
-                                        }
-                                        TokenManagerPlugin.getInstance().removeTokens(player, config.getInt("tracker-token-cost"));
-                                        cooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+                                    long timeRem = TimeUnit.MINUTES.toSeconds(defaultCooldown) - TimeUnit.MILLISECONDS.toSeconds(timeLeft);
+                                    int hours = (int) timeRem / 3600;
+                                    int remainder = (int) timeRem - hours * 3600;
+                                    int mins = remainder / 60;
+                                    remainder = remainder - mins * 60;
+                                    int secs = remainder;
+                                    player.sendMessage(ChatColor.RED + "You have to wait " + mins + "m " + secs + "s before you can use this again.");
+                                }
+                            }
+                        } else {
+                            player.sendMessage(ChatColor.RED + "You do not have enough money!");
+                        }
+                    } else if(event.getClick().isRightClick() == true) {
+                        Long pTokens = TokenManagerPlugin.getInstance().getTokens(player).getAsLong();
+                        if(pTokens >= config.getInt("track-cost.global-token-cost")) {
+                            if (!gCooldowns.containsKey(player.getUniqueId())) {
+                                int x = (int) traitor.getLocation().getX();
+                                int y = (int) traitor.getLocation().getY();
+                                int z = (int) traitor.getLocation().getZ();
+                                for (Player online : Bukkit.getOnlinePlayers()) {
+                                    if (!online.equals(traitor)) {
+                                        online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
+                                                + ChatColor.GRAY + "A traitors coords has been revealed "
+                                                + ChatColor.YELLOW + "(X: " + x + " Y: " + y + " Z: " + z + ")");
                                     } else {
-                                        long timeRem = TimeUnit.MINUTES.toSeconds(defaultCooldown) - TimeUnit.MILLISECONDS.toSeconds(timeLeft);
-                                        int hours = (int) timeRem / 3600;
-                                        int remainder = (int) timeRem - hours * 3600;
-                                        int mins = remainder / 60;
-                                        remainder = remainder - mins * 60;
-                                        int secs = remainder;
-                                        player.sendMessage(ChatColor.RED + "You have to wait " + mins + "m " + secs + "s before you can use this again.");
+                                        traitor.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
+                                                + ChatColor.RED + "" + ChatColor.BOLD + "Your location has been revealed!");
                                     }
                                 }
+                                TokenManagerPlugin.getInstance().removeTokens(player, config.getInt("track-cost.global-token-cost"));
+                                gCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+                                player.closeInventory();
                             } else {
-                                long defaultCooldown = TimeUnit.MINUTES.toSeconds(config.getLong("cooldowns.traitor-grace-period"));
-                                long timeLeft = System.currentTimeMillis() - traitors.getLong(traitor.getUniqueId().toString() + ".startdate");
-                                long timeRem = defaultCooldown - TimeUnit.MILLISECONDS.toSeconds(timeLeft);
+                                long defaultCooldown = config.getLong("cooldowns.traitortrack-global-cooldown");
+                                long timeLeft = System.currentTimeMillis() - gCooldowns.get(player.getUniqueId());
+                                if (TimeUnit.MILLISECONDS.toMinutes(timeLeft) >= defaultCooldown) {
+                                    int x = (int) traitor.getLocation().getX();
+                                    int y = (int) traitor.getLocation().getY();
+                                    int z = (int) traitor.getLocation().getZ();
+                                    for (Player online : Bukkit.getOnlinePlayers()) {
+                                        if (!online.equals(traitor)) {
+                                            online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
+                                                    + ChatColor.GRAY + "A traitors coords has been revealed "
+                                                    + ChatColor.YELLOW + "(X: " + x + " Y: " + y + " Z: " + z + ")");
+                                        } else {
+                                            traitor.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
+                                                    + ChatColor.RED + "" + ChatColor.BOLD + "Your location has been revealed!");
+                                        }
+                                    }
+                                    TokenManagerPlugin.getInstance().removeTokens(player, config.getInt("track-cost.global-token-cost"));
+                                    gCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+                                    player.closeInventory();
+                                } else {
+                                    long timeRem = TimeUnit.MINUTES.toSeconds(defaultCooldown) - TimeUnit.MILLISECONDS.toSeconds(timeLeft);
+                                    int hours = (int) timeRem / 3600;
+                                    int remainder = (int) timeRem - hours * 3600;
+                                    int mins = remainder / 60;
+                                    remainder = remainder - mins * 60;
+                                    int secs = remainder;
+                                    player.sendMessage(ChatColor.RED + "You have to wait " + mins + "m " + secs + "s before you can use this again.");
+                                }
+                            }
+                        } else {
+                            player.sendMessage(ChatColor.RED + "You do not have enough tokens!");
+                        }
+                    }
+                } else if(event.getSlot() == 15) {
+                    Long pTokens = TokenManagerPlugin.getInstance().getTokens(player).getAsLong();
+                    if(pTokens >= config.getInt("track-cost.personal-token-cost")) {
+                        if (!pCooldowns.containsKey(player.getUniqueId())) {
+                            int x = (int) traitor.getLocation().getX();
+                            int y = (int) traitor.getLocation().getY();
+                            int z = (int) traitor.getLocation().getZ();
+                            player.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
+                                    + ChatColor.GRAY + "The coords to " + ChatColor.RED + traitor.getName() + " is "
+                                    + ChatColor.YELLOW + "(X: " + x + " Y: " + y + " Z: " + z + ")");
+                            traitor.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
+                                    + ChatColor.RED + "" + ChatColor.BOLD + "Your location has been revealed!");
+                            TokenManagerPlugin.getInstance().removeTokens(player, config.getInt("track-cost.personal-token-cost"));
+                            pCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+                            player.closeInventory();
+                        } else {
+                            long defaultCooldown = config.getLong("cooldowns.traitortrack-personal-cooldown");
+                            long timeLeft = System.currentTimeMillis() - pCooldowns.get(player.getUniqueId());
+                            if (TimeUnit.MILLISECONDS.toMinutes(timeLeft) >= defaultCooldown) {
+                                int x = (int) traitor.getLocation().getX();
+                                int y = (int) traitor.getLocation().getY();
+                                int z = (int) traitor.getLocation().getZ();
+                                player.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
+                                        + ChatColor.GRAY + "The coords to " + ChatColor.RED + traitor.getName() + " is "
+                                        + ChatColor.YELLOW + "(X: " + x + " Y: " + y + " Z: " + z + ")");
+                                traitor.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
+                                        + ChatColor.RED + "" + ChatColor.BOLD + "Your location has been revealed!");
+                                TokenManagerPlugin.getInstance().removeTokens(player, config.getInt("track-cost.personal-token-cost"));
+                                pCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
+                                player.closeInventory();
+                            } else {
+                                long timeRem = TimeUnit.MINUTES.toSeconds(defaultCooldown) - TimeUnit.MILLISECONDS.toSeconds(timeLeft);
                                 int hours = (int) timeRem / 3600;
                                 int remainder = (int) timeRem - hours * 3600;
                                 int mins = remainder / 60;
                                 remainder = remainder - mins * 60;
                                 int secs = remainder;
-                                player.sendMessage(ChatColor.RED + "You have to wait " + mins + "m " + secs + "s before you can use this.");
+                                player.sendMessage(ChatColor.RED + "You have to wait " + mins + "m " + secs + "s before you can use this again.");
                             }
-                        } else {
-                            player.sendMessage(ChatColor.RED + "You can't track " + traitor.getName() + " when he's offline!");
                         }
                     } else {
                         player.sendMessage(ChatColor.RED + "You do not have enough tokens!");

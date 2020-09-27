@@ -25,6 +25,36 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class TraitorTrack implements CommandExecutor {
+	public void chooseType (Player player, Player traitor) {
+		File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
+				.getDataFolder() + "/config.yml");
+		FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
+		Inventory chooseTrack = Bukkit.createInventory(null, 54, ChatColor.RED + "Tracking: " + traitor.getName());
+
+		ArrayList lore1 = new ArrayList();
+		ItemStack global = new ItemStack(Material.CLOCK);
+		ItemMeta meta1 = global.getItemMeta();
+		meta1.setDisplayName(ChatColor.YELLOW + "Global Tracking");
+		lore1.add(ChatColor.GRAY + "Globally track this traitor");
+		lore1.add(ChatColor.GRAY + "Cost: " + ChatColor.RED + config.getInt("tracker-token-cost") + " Tokens" + ChatColor.GRAY + " || " + ChatColor.RED + "$5000");
+		lore1.add(ChatColor.GRAY + "- " + ChatColor.RED + config.getInt("tracker-token-cost") + " Tokens" + ChatColor.GRAY + "(Left Click)");
+		lore1.add(ChatColor.GRAY + "- " + ChatColor.RED + "$5000" + ChatColor.GRAY + "(Right Click)");
+		meta1.setLore(lore1);
+		global.setItemMeta(meta1);
+		chooseTrack.setItem(11, global);
+
+		ArrayList lore2 = new ArrayList();
+		ItemStack personal = new ItemStack(Material.PAPER);
+		ItemMeta meta2 = personal.getItemMeta();
+		meta2.setDisplayName(ChatColor.YELLOW + "Global Tracking");
+		lore1.add(ChatColor.GRAY + "Globally track this traitor");
+		lore1.add(ChatColor.GRAY + "Cost: " + ChatColor.RED + config.getInt("tracker-token-cost") + " Tokens");
+		meta2.setLore(lore2);
+		personal.setItemMeta(meta2);
+		chooseTrack.setItem(15, personal);
+		player.openInventory(chooseTrack);
+	}
+
 	public void openGUI(Player player, int page) {
 		File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
 				.getDataFolder() + "/traitors.yml");
@@ -66,7 +96,7 @@ public class TraitorTrack implements CommandExecutor {
 			SkullMeta meta = (SkullMeta) head.getItemMeta();
 			meta.setOwningPlayer(Bukkit.getOfflinePlayer(UUID.fromString(traitorPlayer)));
 			meta.setDisplayName(ChatColor.YELLOW + "" + ChatColor.BOLD + Bukkit.getOfflinePlayer(UUID.fromString(traitorPlayer)).getName());
-			lore.add(ChatColor.GRAY + "Cost: " + ChatColor.RED + config.getInt("tracker-token-cost") + " Tokens");
+			lore.add(ChatColor.GRAY + "Click to track player");
 			lore.add(ChatColor.GRAY + "Time Left: " + ChatColor.YELLOW + hours + "h " + mins + "m " + secs + "s");
 			lore.add(ChatColor.GRAY + "Lives left: " + ChatColor.GREEN + traitors.getInt(traitorPlayer + ".life"));
 			lore.add(ChatColor.DARK_GRAY + "" + ChatColor.ITALIC + "Click to broadcast location!");
