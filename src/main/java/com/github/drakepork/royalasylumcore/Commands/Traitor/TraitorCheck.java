@@ -1,7 +1,9 @@
-package com.github.drakepork.traitors.Commands;
+package com.github.drakepork.royalasylumcore.Commands.Traitor;
 
 import com.Zrips.CMI.CMI;
 import com.Zrips.CMI.Containers.CMIUser;
+import com.github.drakepork.royalasylumcore.Core;
+import com.google.inject.Inject;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -16,6 +18,22 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class TraitorCheck implements CommandExecutor {
+	private Core plugin;
+
+	@Inject
+	public TraitorCheck(Core plugin) {
+		this.plugin = plugin;
+	}
+
+	public void tellConsole(String message){
+		Bukkit.getConsoleSender().sendMessage(message);
+	}
+
+	public String ColourMessage(String message){
+		message = plugin.translateHexColorCodes(ChatColor.translateAlternateColorCodes('&', message));
+		return message;
+	}
+
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
 				.getDataFolder() + "/traitors.yml");

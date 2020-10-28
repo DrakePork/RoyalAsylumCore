@@ -1,8 +1,13 @@
-package com.github.drakepork.traitors;
+package com.github.drakepork.royalasylumcore;
 
 import com.Zrips.CMI.CMI;
 import com.Zrips.CMI.Containers.CMIUser;
-import com.github.drakepork.traitors.Commands.*;
+import com.github.drakepork.royalasylumcore.Commands.Traitor.*;
+import com.github.drakepork.royalasylumcore.Utils.ConfigCreator;
+import com.github.drakepork.royalasylumcore.Utils.LangCreator;
+import com.github.drakepork.royalasylumcore.Utils.PluginReceiver;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import me.realized.tokenmanager.TokenManagerPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -23,20 +28,32 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public final class TraitorsMain extends JavaPlugin implements Listener {
+public final class Core extends JavaPlugin implements Listener {
     public HashMap<UUID, Long> gCooldowns = new HashMap<>();
     public HashMap<UUID, Long> pCooldowns = new HashMap<>();
     public HashMap<UUID, Long> killCooldowns = new HashMap<>();
-    private static TraitorsMain instance;
 
-    public static TraitorsMain getInstance() {
-        return instance;
-    }
+
+    @Inject private LangCreator lang;
+    @Inject private ConfigCreator ConfigCreator;
+    @Inject private TraitorRun TraitorRun;
+    @Inject private TraitorTrack TraitorTrack;
+    @Inject private TraitorCheck TraitorCheck;
+
+
 
     @Override
     public void onEnable() {
-        instance = this;
+        PluginReceiver module = new PluginReceiver(this);
+        Injector injector = module.createInjector();
+        injector.injectMembers(this);
+
+        this.ConfigCreator.init();
+        this.lang.init();
+
         Bukkit.getServer().getPluginManager().registerEvents(this, this);
         File f = new File(String.valueOf(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
                 .getDataFolder()));
@@ -95,16 +112,31 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
             }
         }
 
-        getCommand("traitor").setExecutor(new TraitorRun());
-        getCommand("traitortrack").setExecutor(new TraitorTrack());
-        getCommand("traitorcheck").setExecutor(new TraitorCheck());
-        getLogger().info("Enabled Traitors - version " + getDescription().getVersion());
+        getCommand("traitor").setExecutor(this.TraitorRun);
+        getCommand("traitortrack").setExecutor(this.TraitorTrack);
+        getCommand("traitorcheck").setExecutor(this.TraitorCheck);
+        getLogger().info("Enabled Traitors - v" + getDescription().getVersion());
     }
 
     @Override
     public void onDisable() {
-        instance = null;
-        getLogger().info("Disabled Traitors - version " + getDescription().getVersion());
+        getLogger().info("Disabled Traitors - v" + getDescription().getVersion());
+    }
+
+
+    public String translateHexColorCodes(String message) {
+        final Pattern hexPattern = Pattern.compile("\\{#" + "([A-Fa-f0-9]{6})" + "\\}");
+        Matcher matcher = hexPattern.matcher(message);
+        StringBuffer buffer = new StringBuffer(message.length() + 4 * 8);
+        while (matcher.find()) {
+            String group = matcher.group(1);
+            matcher.appendReplacement(buffer, ChatColor.COLOR_CHAR + "x"
+                    + ChatColor.COLOR_CHAR + group.charAt(0) + ChatColor.COLOR_CHAR + group.charAt(1)
+                    + ChatColor.COLOR_CHAR + group.charAt(2) + ChatColor.COLOR_CHAR + group.charAt(3)
+                    + ChatColor.COLOR_CHAR + group.charAt(4) + ChatColor.COLOR_CHAR + group.charAt(5)
+            );
+        }
+        return matcher.appendTail(buffer).toString();
     }
 
     @EventHandler
@@ -352,7 +384,6 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
         }
     }
 
-    private final TraitorTrack TraitorTrackCommand = new TraitorTrack();
 
 
     @EventHandler
@@ -371,10 +402,10 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                 if(event.getCurrentItem().getType() == Material.PAPER) {
                     if(event.getSlot() == 46) {
                         int page = Integer.parseInt(traitorTitle[4])-1;
-                        TraitorTrackCommand.openGUI(player, page);
+                        this.TraitorTrack.openGUI(player, page);
                     } else if(event.getSlot() == 52) {
                         int page = Integer.parseInt(traitorTitle[4])+1;
-                        TraitorTrackCommand.openGUI(player, page);
+                        this.TraitorTrack.openGUI(player, page);
                     }
                 } else if(event.getCurrentItem().getType() == Material.PLAYER_HEAD) {
                     String iName = ChatColor.stripColor(event.getCurrentItem().getItemMeta().getDisplayName());
@@ -383,7 +414,7 @@ public final class TraitorsMain extends JavaPlugin implements Listener {
                     if(traitor.isOnline()) {
                         long traitorStarted = System.currentTimeMillis() - traitors.getLong(traitor.getUniqueId().toString() + ".startdate");
                         if(TimeUnit.MILLISECONDS.toMinutes(traitorStarted) >= config.getLong("cooldowns.traitor-grace-period")) {
-                            TraitorTrackCommand.chooseType(player, pTraitor);
+                            this.TraitorTrack.chooseType(player, pTraitor);
                         } else {
                             long defaultCooldown = TimeUnit.MINUTES.toSeconds(config.getLong("cooldowns.traitor-grace-period"));
                             long timeLeft = System.currentTimeMillis() - traitors.getLong(traitor.getUniqueId().toString() + ".startdate");

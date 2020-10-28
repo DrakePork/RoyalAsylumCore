@@ -1,20 +1,17 @@
-package com.github.drakepork.traitors.Commands;
+package com.github.drakepork.royalasylumcore.Commands.Traitor;
 
 import com.Zrips.CMI.CMI;
 import com.Zrips.CMI.Containers.CMIUser;
-import com.github.drakepork.traitors.TraitorsMain;
+import com.github.drakepork.royalasylumcore.Core;
+import com.google.inject.Inject;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.potion.Potion;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,6 +21,24 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class TraitorRun implements CommandExecutor {
+	private Core plugin;
+
+	@Inject
+	public TraitorRun(Core plugin) {
+		this.plugin = plugin;
+	}
+
+	public void tellConsole(String message){
+		Bukkit.getConsoleSender().sendMessage(message);
+	}
+
+	public String ColourMessage(String message){
+		message = plugin.translateHexColorCodes(ChatColor.translateAlternateColorCodes('&', message));
+		return message;
+	}
+
+
+
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
 				.getDataFolder() + "/traitors.yml");
@@ -84,7 +99,7 @@ public class TraitorRun implements CommandExecutor {
 								online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
 										+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals are opening in " + config.getLong("cooldowns.traitor-grace-period") + " minutes...");
 							}
-							TraitorsMain.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(TraitorsMain.getInstance(), new Runnable() {
+							plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 								public void run() {
 									if (CMI.getInstance().getPortalManager().getByName("BHPortal") != null || CMI.getInstance().getPortalManager().getByName("NHPortal") != null) {
 										for (Player online : Bukkit.getOnlinePlayers()) {
@@ -105,7 +120,7 @@ public class TraitorRun implements CommandExecutor {
 							Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " " + config.getString("traitor-effect.type") + " " + config.getInt("traitor-effect.duration") + config.getInt("traitor-effect.amplifier") +  " -s");
 						}
 						Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + player.getName() + " parent add traitor");
-						TraitorsMain.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(TraitorsMain.getInstance(), new Runnable() {
+						plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 							public void run() {
 								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " invisibility " + TimeUnit.MINUTES.toSeconds(config.getInt("cooldowns.traitor-grace-period")) + " 1 -s");
 							}
@@ -162,7 +177,7 @@ public class TraitorRun implements CommandExecutor {
 									online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
 											+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals are opening in " + config.getLong("cooldowns.traitor-grace-period") + " minutes...");
 								}
-								TraitorsMain.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(TraitorsMain.getInstance(), new Runnable() {
+								plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 									public void run() {
 										if (CMI.getInstance().getPortalManager().getByName("BHPortal") != null || CMI.getInstance().getPortalManager().getByName("NHPortal") != null) {
 											for (Player online : Bukkit.getOnlinePlayers()) {
@@ -183,7 +198,7 @@ public class TraitorRun implements CommandExecutor {
 								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " " + config.getString("traitor-effect.type") + " " + config.getInt("traitor-effect.duration") + config.getInt("traitor-effect.amplifier") +  " -s");
 							}
 							Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lp user " + player.getName() + " parent add traitor");
-							TraitorsMain.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(TraitorsMain.getInstance(), new Runnable() {
+							plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 								public void run() {
 									Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "cmi effect " + player.getName() + " invisibility " + TimeUnit.MINUTES.toSeconds(config.getInt("cooldowns.traitor-grace-period")) + " 1 -s");
 								}
