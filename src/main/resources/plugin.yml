@@ -1,8 +1,8 @@
-name: Traitors
+name: RoyalAsylumCore
 version: ${project.version}
-main: com.github.drakepork.traitors.TraitorsMain
+main: com.github.drakepork.royalasylumcore.Core
 api-version: 1.16
-depend: [CMI, TokenManager]
+depend: [CMI, TokenManager, DiscordSRV]
 authors: [DrakePork]
 description: Wham
 commands:
@@ -21,6 +21,49 @@ commands:
     usage: /<command>
     permission: royalasylum.traitor.check
     permission-message: §4Error:§c You do not have permission to execute this command...
+  a:
+    description: AdminChat
+    usage: /<command>
+    permission: royalasylum.chat.admin
+    permission-message: §4Error:§c You do not have permission to execute this command...
+  b:
+    description: BuildChat
+    usage: /<command>
+    permission: royalasylum.chat.build
+    permission-message: §4Error:§c You do not have permission to execute this command...
+  d:
+    description: DiscordChat
+    usage: /<command>
+    permission: royalasylum.chat.discord
+    permission-message: §4Error:§c You do not have permission to execute this command...
+  k:
+    description: GuardChat
+    usage: /<command>
+    permission: royalasylum.chat.guard
+    permission-message: §4Error:§c You do not have permission to execute this command...
+  hunt:
+    description: HunterChat
+    usage: /<command>
+    permission: royalasylum.chat.hunter
+    permission-message: §4Error:§c You do not have permission to execute this command...
+  report:
+    description: ReportChat
+    usage: /<command>
+    permission: royalasylum.chat.report
+    permission-message: §4Error:§c You do not have permission to execute this command...
+  rtc:
+    description: RoundTableChat
+    usage: /<command>
+    permission: royalasylum.chat.roundtable
+    permission-message: §4Error:§c You do not have permission to execute this command...
+  tc:
+    description: TraitorChat
+    usage: /<command>
+    permission: royalasylum.chat.traitor
+    permission-message: §4Error:§c You do not have permission to execute this command...
+
+
+
 permissions:
   royalasylum.traitor:
     description: Gives you access to /traitor commands
@@ -28,3 +71,21 @@ permissions:
     description: Gives you access to /traitortrack command
   royalasylum.traitor.check:
     description: Gives you access to /traitorcheck command
+  royalasylum.chat.admin:
+    description: Gives you access to /a command
+  royalasylum.chat.build:
+    description: Gives you access to /b command
+  royalasylum.chat.discord:
+    description: Gives you access to /d command
+  royalasylum.chat.guard:
+    description: Gives you access to /k command
+  royalasylum.chat.hunter:
+    description: Gives you access to /hunt command
+  royalasylum.chat.report:
+    description: Gives you access to /report command
+  royalasylum.chat.report.view:
+    description: Gives you access to view /report command
+  royalasylum.chat.roundtable:
+    description: Gives you access to /a command
+  royalasylum.chat.traitor:
+    description: Gives you access to /a command

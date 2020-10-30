@@ -40,18 +40,9 @@ public class TraitorRun implements CommandExecutor {
 
 
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-				.getDataFolder() + "/traitors.yml");
-		if (!f.exists()) {
-			try {
-				f.createNewFile();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-				.getDataFolder() + "/config.yml");
-		FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
+		File f = new File(plugin.getDataFolder() + File.separator
+				+ "traitors.yml");
+		FileConfiguration config = plugin.getConfig();
 		FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
 		Set<String> traitorList = traitors.getKeys(false);
 		Long delay = (config.getLong("cooldowns.traitor-grace-period")*60)*20;

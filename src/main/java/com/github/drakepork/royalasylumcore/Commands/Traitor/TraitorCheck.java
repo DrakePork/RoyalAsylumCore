@@ -35,13 +35,11 @@ public class TraitorCheck implements CommandExecutor {
 	}
 
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-				.getDataFolder() + "/traitors.yml");
+		File f = new File(plugin.getDataFolder() + File.separator
+				+ "traitors.yml");
 		FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
 		Set<String> traitorList = traitors.getKeys(false);
-		File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-				.getDataFolder() + "/config.yml");
-		FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
+		FileConfiguration config = plugin.getConfig();
 		if(sender instanceof Player) {
 			if (args.length < 1) {
 				Player player = (Player) sender;

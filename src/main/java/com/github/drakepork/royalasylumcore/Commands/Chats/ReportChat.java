@@ -15,11 +15,11 @@ import org.bukkit.entity.Player;
 
 import java.io.File;
 
-public class RoundTableChat implements CommandExecutor {
+public class ReportChat implements CommandExecutor {
 	private Core plugin;
 
 	@Inject
-	public RoundTableChat(Core plugin) {
+	public ReportChat(Core plugin) {
 		this.plugin = plugin;
 	}
 
@@ -46,21 +46,21 @@ public class RoundTableChat implements CommandExecutor {
 				for (int i = 0; i < args.length; i++) {
 					cMessage = cMessage + args[i] + " ";
 				}
-				String format = langConf.getString("chat.roundtable.format").replaceAll("\\[name\\]", player.getName());
+				player.sendMessage(colourMessage(prefix + langConf.getString("chat.report.success")));
+				String format = langConf.getString("chat.report.format").replaceAll("\\[name\\]", player.getName());
 				String message = format.replaceAll("\\[message\\]", cMessage);
 				for (Player online : Bukkit.getServer().getOnlinePlayers()) {
-					if (online.hasPermission("royalasylum.chat.roundtable")) {
+					if (online.hasPermission("royalasylum.chat.report.view")) {
 						online.sendMessage(colourMessage(message));
 					}
 				}
 				tellConsole(colourMessage(message));
-
 				String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", player.getName());
 				String dMessage = dFormat.replaceAll("\\[message\\]", cMessage);
-				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("roundtable-chat");
+				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("report-chat");
 				channel.sendMessage(dMessage).queue();
 			} else {
-				player.sendMessage(colourMessage(prefix + langConf.getString("chat.roundtable.wrong-usage")));
+				player.sendMessage(colourMessage(prefix + langConf.getString("chat.report.wrong-usage")));
 			}
 		} else {
 			if(args.length > 0) {
@@ -68,10 +68,11 @@ public class RoundTableChat implements CommandExecutor {
 				for (int i = 0; i < args.length; i++) {
 					cMessage = cMessage + args[i] + " ";
 				}
-				String format = langConf.getString("chat.roundtable.format").replaceAll("\\[name\\]", "Console");
+				tellConsole(colourMessage(prefix + langConf.getString("chat.report.success")));
+				String format = langConf.getString("chat.report.format").replaceAll("\\[name\\]", "Console");
 				String message = format.replaceAll("\\[message\\]", cMessage);
 				for (Player online : Bukkit.getServer().getOnlinePlayers()) {
-					if (online.hasPermission("royalasylum.chat.roundtable")) {
+					if (online.hasPermission("royalasylum.chat.report.view")) {
 						online.sendMessage(colourMessage(message));
 					}
 				}
@@ -79,10 +80,10 @@ public class RoundTableChat implements CommandExecutor {
 
 				String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", "Console");
 				String dMessage = dFormat.replaceAll("\\[message\\]", cMessage);
-				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("roundtable-chat");
+				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("report-chat");
 				channel.sendMessage(dMessage).queue();
 			} else {
-				tellConsole(colourMessage(prefix + langConf.getString("chat.roundtable.wrong-usage")));
+				tellConsole(colourMessage(prefix + langConf.getString("chat.report.wrong-usage")));
 			}
 		}
 		return true;

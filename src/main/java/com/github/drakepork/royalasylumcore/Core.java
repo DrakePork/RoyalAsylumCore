@@ -3,25 +3,35 @@ package com.github.drakepork.royalasylumcore;
 import com.Zrips.CMI.CMI;
 import com.Zrips.CMI.Containers.CMIUser;
 import com.github.drakepork.royalasylumcore.Commands.Traitor.*;
+import com.github.drakepork.royalasylumcore.Commands.Chats.*;
+import com.github.drakepork.royalasylumcore.Listeners.Discord;
 import com.github.drakepork.royalasylumcore.Utils.ConfigCreator;
 import com.github.drakepork.royalasylumcore.Utils.LangCreator;
 import com.github.drakepork.royalasylumcore.Utils.PluginReceiver;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import github.scarsz.discordsrv.DiscordSRV;
 import me.realized.tokenmanager.TokenManagerPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -43,10 +53,23 @@ public final class Core extends JavaPlugin implements Listener {
     @Inject private TraitorTrack TraitorTrack;
     @Inject private TraitorCheck TraitorCheck;
 
+    @Inject private AdminChat AdminChat;
+    @Inject private BuildChat BuildChat;
+    @Inject private DiscordChat DiscordChat;
+    @Inject private GuardChat GuardChat;
+    @Inject private HunterChat HunterChat;
+    @Inject private ReportChat ReportChat;
+    @Inject private RoundTableChat RoundTableChat;
+    @Inject private TraitorChat TraitorChat;
+
+
+    private Discord Discord = new Discord(this);
+
 
 
     @Override
     public void onEnable() {
+        DiscordSRV.api.subscribe(Discord);
         PluginReceiver module = new PluginReceiver(this);
         Injector injector = module.createInjector();
         injector.injectMembers(this);
@@ -55,57 +78,13 @@ public final class Core extends JavaPlugin implements Listener {
         this.lang.init();
 
         Bukkit.getServer().getPluginManager().registerEvents(this, this);
-        File f = new File(String.valueOf(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                .getDataFolder()));
-        if(!f.exists()) {
-            f.mkdir();
-        }
 
-        f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                .getDataFolder() + "/config.yml");
-        if (!f.exists()) {
+
+        File traitorFile = new File(this.getDataFolder() + File.separator
+                + "traitors.yml");
+        if(!traitorFile.exists()) {
             try {
-                f.createNewFile();
-                FileConfiguration config = YamlConfiguration.loadConfiguration(f);
-                config.set("cooldowns.traitortrack-personal-cooldown", 30);
-                config.set("cooldowns.traitortrack-global-cooldown", 30);
-                config.set("cooldowns.traitor-grace-period", 10);
-                config.set("cooldowns.traitor-time-required", 1200);
-                config.set("cooldowns.login-badlands-delay", 5);
-                config.set("login-badlands-tpout", true);
-                config.set("tracker-token-cost", 100);
-                config.set("track-cost.personal-token-cost", 100);
-                config.set("track-cost.global-token-cost", 100);
-                config.set("track-cost.global-money-cost", 5000);
-                config.set("default-lives", 1);
-                config.set("traitor-kill-tokens", 20);
-                config.set("hunter-kill-prize.money", 250000);
-                config.set("hunter-kill-prize.money-extra-life", 50000);
-                config.set("hunter-kill-prize.tokens", 500);
-                config.set("hunter-kill-prize.tokens-extra-life", 250);
-                config.set("traitor-effect.type", "HUNGER");
-                config.set("traitor-effect.duration", 100000);
-                config.set("traitor-effect.amplifier", 3);
-                ArrayList list = new ArrayList();
-                list.add("group.default:100");
-                config.set("token-kill-delay", 15);
-                config.set("token-group-kill-rewards", list);
-                try {
-                    config.save(f);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-
-        f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                .getDataFolder() + "/traitors.yml");
-        if(!f.exists()) {
-            try {
-                f.createNewFile();
+                traitorFile.createNewFile();
                 getLogger().info("File traitors.yml successfully created!");
             } catch (IOException e) {
                 getLogger().info("File traitors.yml failed to create!");
@@ -115,12 +94,23 @@ public final class Core extends JavaPlugin implements Listener {
         getCommand("traitor").setExecutor(this.TraitorRun);
         getCommand("traitortrack").setExecutor(this.TraitorTrack);
         getCommand("traitorcheck").setExecutor(this.TraitorCheck);
-        getLogger().info("Enabled Traitors - v" + getDescription().getVersion());
+
+        getCommand("a").setExecutor(this.AdminChat);
+        getCommand("b").setExecutor(this.BuildChat);
+        getCommand("d").setExecutor(this.DiscordChat);
+        getCommand("k").setExecutor(this.GuardChat);
+        getCommand("report").setExecutor(this.ReportChat);
+        getCommand("rtc").setExecutor(this.RoundTableChat);
+        getCommand("tc").setExecutor(this.TraitorChat);
+        getCommand("hunt").setExecutor(this.HunterChat);
+
+        getLogger().info("Enabled RoyalAsylumCore - v" + getDescription().getVersion());
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("Disabled Traitors - v" + getDescription().getVersion());
+        getLogger().info("Disabled RoyalAsylumCore - v" + getDescription().getVersion());
+        DiscordSRV.api.unsubscribe(Discord);
     }
 
 
@@ -140,16 +130,69 @@ public final class Core extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void traitorAdditionalLivesRespawn(PlayerRespawnEvent event) {
-        File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                .getDataFolder() + "/traitors.yml");
-        if (!f.exists()) {
-            try {
-                f.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
+    public void commands(PlayerCommandPreprocessEvent event) {
+        switch(event.getMessage().toLowerCase()) {
+            case "/pl":
+            case "/plugins":
+            case "/ver":
+            case "/version":
+            case "/about":
+            case "/icanhasbukkit":
+            case "/bukkit:?":
+            case "/bukkit:pl":
+            case "/bukkit:plugins":
+            case "/bukkit:about":
+            case "/bukkit:help":
+            case "/bukkit:ver":
+            case "/bukkit:version":
+            case "/minecraft:help":
+            case "/minecraft:me":
+            case "/?":
+            case "/help":
+                if(!event.getPlayer().isOp()) {
+                    event.setCancelled(true);
+                    event.getPlayer().sendMessage(ChatColor.WHITE + "Unknown command. Type " + '"' + "/help" + '"' + " for help.");
+                }
+                break;
+        }
+    }
+
+    @EventHandler
+    public void villagerTrade(InventoryOpenEvent event) {
+        if (event.getInventory().getType() != InventoryType.MERCHANT) {
+        } else if (event.getInventory().getType().equals(InventoryType.MERCHANT)) {
+            Player player = (Player) event.getPlayer();
+            player.sendMessage(ChatColor.RED + "Villager trading has been disabled");
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void islarroCraft(CraftItemEvent event) {
+        if(event.getWhoClicked() instanceof HumanEntity) {
+            Player player = (Player) event.getWhoClicked();
+            if(player.getUniqueId().toString().equalsIgnoreCase("2b8cf1ca-1c7f-4529-a5a7-62433fe16460")) {
+                if(event.getResult().equals(Material.CAKE)) {
+                    event.setCancelled(true);
+                    ItemStack cake = new ItemStack(Material.CAKE, 1);
+                    ItemMeta cakeMeta = cake.getItemMeta();
+                    cakeMeta.setDisplayName(ChatColor.WHITE + "Bread Cake");
+                    player.getInventory().addItem(cake);
+                } else if(event.getResult().equals(Material.BREAD)) {
+                    event.setCancelled(true);
+                    ItemStack bread = new ItemStack(Material.BREAD, 1);
+                    ItemMeta breadMeta = bread.getItemMeta();
+                    breadMeta.setDisplayName(ChatColor.WHITE + "Breadest Bread");
+                    player.getInventory().addItem(bread);
+                }
             }
         }
+    }
+
+    @EventHandler
+    public void traitorAdditionalLivesRespawn(PlayerRespawnEvent event) {
+        File f = new File(this.getDataFolder() + File.separator
+                + "traitors.yml");
         FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
         Set<String> traitorList = traitors.getKeys(false);
         if(traitorList.contains(event.getPlayer().getUniqueId().toString())) {
@@ -164,15 +207,8 @@ public final class Core extends JavaPlugin implements Listener {
     @EventHandler
     public void traitorDrinkEvent(PlayerItemConsumeEvent event) {
         if(event.getItem().equals(Material.MILK_BUCKET)) {
-            File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                    .getDataFolder() + "/traitors.yml");
-            if (!f.exists()) {
-                try {
-                    f.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            File f = new File(this.getDataFolder() + File.separator
+                    + "traitors.yml");
             FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
             Set<String> traitorList = traitors.getKeys(false);
             Player player = event.getPlayer();
@@ -185,20 +221,11 @@ public final class Core extends JavaPlugin implements Listener {
 
     @EventHandler
     public void badlandsJoin(PlayerJoinEvent event) {
-        File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                .getDataFolder() + "/config.yml");
-        FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
+        FileConfiguration config = this.getConfig();
         Player player = event.getPlayer();
         if(config.getBoolean("login-badlands-tpout") == true) {
-            File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                    .getDataFolder() + "/traitors.yml");
-            if (!f.exists()) {
-                try {
-                    f.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            File f = new File(this.getDataFolder() + File.separator
+                    + "traitors.yml");
             FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
             Set<String> traitorList = traitors.getKeys(false);
             if (player.getWorld().getName().equalsIgnoreCase("world") && !traitorList.contains(player.getUniqueId().toString())) {
@@ -213,18 +240,9 @@ public final class Core extends JavaPlugin implements Listener {
 
     @EventHandler
     public void traitorDeath(PlayerDeathEvent event) {
-        File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                .getDataFolder() + "/traitors.yml");
-        if (!f.exists()) {
-            try {
-                f.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                .getDataFolder() + "/config.yml");
-        FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
+        File f = new File(this.getDataFolder() + File.separator
+                + "traitors.yml");
+        FileConfiguration config = this.getConfig();
         FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
         Set<String> traitorList = traitors.getKeys(false);
         if (event.getEntity().getKiller() instanceof Player) {
@@ -388,12 +406,10 @@ public final class Core extends JavaPlugin implements Listener {
 
     @EventHandler
     public void invClick(InventoryClickEvent event) {
-        File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                .getDataFolder() + "/traitors.yml");
+        File f = new File(this.getDataFolder() + File.separator
+                + "traitors.yml");
         FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
-        File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-                .getDataFolder() + "/config.yml");
-        FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
+        FileConfiguration config = this.getConfig();
         String[] traitorTitle = ChatColor.stripColor(event.getView().getTitle()).split(" ");
         if(traitorTitle[0].equalsIgnoreCase("Traitors")) {
             if (event.getCurrentItem() != null) {

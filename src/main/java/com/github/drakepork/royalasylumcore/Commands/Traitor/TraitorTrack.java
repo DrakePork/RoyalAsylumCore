@@ -19,7 +19,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
@@ -44,9 +43,7 @@ public class TraitorTrack implements CommandExecutor {
 	}
 
 	public void chooseType (Player player, Player traitor) {
-		File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-				.getDataFolder() + "/config.yml");
-		FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
+		FileConfiguration config = plugin.getConfig();
 		Inventory chooseTrack = Bukkit.createInventory(null, 27, ChatColor.RED + "Tracking: " + traitor.getName());
 
 		ArrayList lore1 = new ArrayList();
@@ -74,18 +71,9 @@ public class TraitorTrack implements CommandExecutor {
 	}
 
 	public void openGUI(Player player, int page) {
-		File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-				.getDataFolder() + "/traitors.yml");
-		if (!f.exists()) {
-			try {
-				f.createNewFile();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		File conf = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-				.getDataFolder() + "/config.yml");
-		FileConfiguration config = YamlConfiguration.loadConfiguration(conf);
+		File f = new File(plugin.getDataFolder() + File.separator
+				+ "traitors.yml");
+		FileConfiguration config = plugin.getConfig();
 		FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
 		Set<String> traitorList = traitors.getKeys(false);
 		ArrayList<String> arr = new ArrayList();
@@ -167,16 +155,8 @@ public class TraitorTrack implements CommandExecutor {
 
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if(sender instanceof Player) {
-			File f = new File(Bukkit.getServer().getPluginManager().getPlugin("Traitors")
-					.getDataFolder() + "/traitors.yml");
-			if (!f.exists()) {
-				try {
-					f.createNewFile();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-
+			File f = new File(plugin.getDataFolder() + File.separator
+					+ "traitors.yml");
 			Player player = (Player) sender;
 			openGUI(player, 0);
 		} else {
