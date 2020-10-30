@@ -60,7 +60,15 @@ public class HunterChat implements CommandExecutor {
 				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("hunter-chat");
 				channel.sendMessage(dMessage).queue();
 			} else {
-				player.sendMessage(colourMessage(prefix + langConf.getString("chat.hunter.wrong-usage")));
+				if(plugin.stickyChatEnabled.containsKey(player.getUniqueId())) {
+					String stickEnabled = langConf.getString("chat.stickied.disabled").replaceAll("\\[chat\\]", "Hunter");
+					player.sendMessage(colourMessage(prefix + stickEnabled));
+					plugin.stickyChatEnabled.remove(player.getUniqueId());
+				} else {
+					String stickEnabled = langConf.getString("chat.stickied.enabled").replaceAll("\\[chat\\]", "Hunter");
+					player.sendMessage(colourMessage(prefix + stickEnabled));
+					plugin.stickyChatEnabled.put(player.getUniqueId(), "hunter-chat");
+				}
 			}
 		} else {
 			if(args.length > 0) {

@@ -26,10 +26,7 @@ import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -45,6 +42,8 @@ public final class Core extends JavaPlugin implements Listener {
     public HashMap<UUID, Long> gCooldowns = new HashMap<>();
     public HashMap<UUID, Long> pCooldowns = new HashMap<>();
     public HashMap<UUID, Long> killCooldowns = new HashMap<>();
+
+    public HashMap<UUID, String> stickyChatEnabled = new HashMap<>();
 
 
     @Inject private LangCreator lang;
@@ -127,6 +126,30 @@ public final class Core extends JavaPlugin implements Listener {
             );
         }
         return matcher.appendTail(buffer).toString();
+    }
+
+    @EventHandler
+    public void stickyChat(AsyncPlayerChatEvent event) {
+        Player player = event.getPlayer();
+        if(stickyChatEnabled.containsKey(player.getUniqueId())) {
+            File lang = new File(this.getDataFolder() + File.separator
+                    + "lang" + File.separator + this.getConfig().getString("lang-file"));
+            FileConfiguration langConf = YamlConfiguration.loadConfiguration(lang);
+            event.setCancelled(true);
+            String stickiedChat = stickyChatEnabled.get(player.getUniqueId());
+            String[] split = stickiedChat.split("-");
+
+            String message = event.getMessage();
+            String format = langConf.getString("chat." + split[0] + ".format").replaceAll("\\[name\\]", player.getName());
+            message = format.replaceAll("\\[message\\]", message);
+            for (Player online : Bukkit.getServer().getOnlinePlayers()) {
+                if (online.hasPermission("royalasylum.chat." + split[0])) {
+                    online.sendMessage(translateHexColorCodes(ChatColor.translateAlternateColorCodes('&', message)));
+                }
+            }
+
+            Bukkit.getConsoleSender().sendMessage(translateHexColorCodes(ChatColor.translateAlternateColorCodes('&', message)));
+        }
     }
 
     @EventHandler

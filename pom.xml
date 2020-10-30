@@ -42,7 +42,7 @@
         <dependency>
             <groupId>com.Zrips.CMI</groupId>
             <artifactId>CMI</artifactId>
-            <version>8.7.1.1</version>
+            <version>8.7.9.3</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

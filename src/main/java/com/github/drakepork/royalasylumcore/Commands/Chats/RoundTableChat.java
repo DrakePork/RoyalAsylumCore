@@ -60,7 +60,15 @@ public class RoundTableChat implements CommandExecutor {
 				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("roundtable-chat");
 				channel.sendMessage(dMessage).queue();
 			} else {
-				player.sendMessage(colourMessage(prefix + langConf.getString("chat.roundtable.wrong-usage")));
+				if(plugin.stickyChatEnabled.containsKey(player.getUniqueId())) {
+					String stickEnabled = langConf.getString("chat.stickied.disabled").replaceAll("\\[chat\\]", "RoundTable");
+					player.sendMessage(colourMessage(prefix + stickEnabled));
+					plugin.stickyChatEnabled.remove(player.getUniqueId());
+				} else {
+					String stickEnabled = langConf.getString("chat.stickied.enabled").replaceAll("\\[chat\\]", "RoundTable");
+					player.sendMessage(colourMessage(prefix + stickEnabled));
+					plugin.stickyChatEnabled.put(player.getUniqueId(), "roundtable-chat");
+				}
 			}
 		} else {
 			if(args.length > 0) {

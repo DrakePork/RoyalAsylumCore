@@ -60,7 +60,15 @@ public class BuildChat implements CommandExecutor {
 				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("build-chat");
 				channel.sendMessage(dMessage).queue();
 			} else {
-				player.sendMessage(colourMessage(prefix + langConf.getString("chat.build.wrong-usage")));
+				if(plugin.stickyChatEnabled.containsKey(player.getUniqueId())) {
+					String stickEnabled = langConf.getString("chat.stickied.disabled").replaceAll("\\[chat\\]", "Build");
+					player.sendMessage(colourMessage(prefix + stickEnabled));
+					plugin.stickyChatEnabled.remove(player.getUniqueId());
+				} else {
+					String stickEnabled = langConf.getString("chat.stickied.enabled").replaceAll("\\[chat\\]", "Build");
+					player.sendMessage(colourMessage(prefix + stickEnabled));
+					plugin.stickyChatEnabled.put(player.getUniqueId(), "build-chat");
+				}
 			}
 		} else {
 			if(args.length > 0) {

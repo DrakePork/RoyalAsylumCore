@@ -46,22 +46,29 @@ public class GuardChat implements CommandExecutor {
 				for (int i = 0; i < args.length; i++) {
 					cMessage = cMessage + args[i] + " ";
 				}
-				String message = colourMessage(cMessage);
 				String format = langConf.getString("chat.guard.format").replaceAll("\\[name\\]", player.getName());
-				message = format.replaceAll("\\[message\\]", message);
+				String message = format.replaceAll("\\[message\\]", cMessage);
 				for (Player online : Bukkit.getServer().getOnlinePlayers()) {
 					if (online.hasPermission("royalasylum.chat.guard")) {
-						online.sendMessage(message);
+						online.sendMessage(colourMessage(message));
 					}
 				}
 				tellConsole(colourMessage(message));
 
-				String dFormat = langConf.getString("chat.discord.format").replaceAll("\\[name\\]", player.getName());
+				String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", player.getName());
 				String dMessage = dFormat.replaceAll("\\[message\\]", cMessage);
 				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("guard-chat");
 				channel.sendMessage(dMessage).queue();
 			} else {
-				player.sendMessage(colourMessage(prefix + langConf.getString("chat.guard.wrong-usage")));
+				if(plugin.stickyChatEnabled.containsKey(player.getUniqueId())) {
+					String stickEnabled = langConf.getString("chat.stickied.disabled").replaceAll("\\[chat\\]", "Guard");
+					player.sendMessage(colourMessage(prefix + stickEnabled));
+					plugin.stickyChatEnabled.remove(player.getUniqueId());
+				} else {
+					String stickEnabled = langConf.getString("chat.stickied.enabled").replaceAll("\\[chat\\]", "Guard");
+					player.sendMessage(colourMessage(prefix + stickEnabled));
+					plugin.stickyChatEnabled.put(player.getUniqueId(), "guard-chat");
+				}
 			}
 		} else {
 			if(args.length > 0) {
@@ -69,17 +76,16 @@ public class GuardChat implements CommandExecutor {
 				for (int i = 0; i < args.length; i++) {
 					cMessage = cMessage + args[i] + " ";
 				}
-				String message = colourMessage(cMessage);
 				String format = langConf.getString("chat.guard.format").replaceAll("\\[name\\]", "Console");
-				message = format.replaceAll("\\[message\\]", message);
+				String message = format.replaceAll("\\[message\\]", cMessage);
 				for (Player online : Bukkit.getServer().getOnlinePlayers()) {
 					if (online.hasPermission("royalasylum.chat.guard")) {
-						online.sendMessage(message);
+						online.sendMessage(colourMessage(message));
 					}
 				}
 				tellConsole(colourMessage(message));
 
-				String dFormat = langConf.getString("chat.discord.format").replaceAll("\\[name\\]", "Console");
+				String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", "Console");
 				String dMessage = dFormat.replaceAll("\\[message\\]", cMessage);
 				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("guard-chat");
 				channel.sendMessage(dMessage).queue();

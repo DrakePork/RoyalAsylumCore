@@ -54,7 +54,8 @@ public class LangCreator {
 			langConf.addDefault("chat.hunter.wrong-usage", "&cWrong Usage! /hunt <message>");
 
 			langConf.addDefault("chat.discordSRV.format", "**[name]**: [message]");
-
+			langConf.addDefault("chat.stickied.enabled", "&aEnabled sticky chat for [chat]");
+			langConf.addDefault("chat.stickied.disabled", "&aDisabled sticky chat for [chat]");
 
 
 			langConf.options().copyDefaults(true);

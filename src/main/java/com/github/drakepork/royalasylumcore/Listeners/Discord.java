@@ -43,19 +43,18 @@ public class Discord {
 			cMessage.add(fullmsg[i]);
 		}
 
-		String message = String.join(" ", cMessage);
-		String format = langConf.getString(langFormat).replaceAll("\\[name\\]", fullmsg[1]);
+		String message = ChatColor.stripColor(String.join(" ", cMessage));
+		String format = langConf.getString(langFormat).replaceAll("\\[name\\]", ChatColor.stripColor(fullmsg[1]));
 		message = format.replaceAll("\\[message\\]", message);
 		for (Player online : Bukkit.getServer().getOnlinePlayers()) {
 			if (online.hasPermission(perm)) {
 				online.sendMessage(colourMessage(message));
 			}
 		}
-		tellConsole(message);
+		tellConsole(colourMessage(message));
 
-		String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", fullmsg[1]);
-		String dMessage = dFormat.replaceAll("\\[message\\]", String.join(" ", cMessage));
-		dMessage = dMessage.replaceAll("§f", "");
+		String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", ChatColor.stripColor(fullmsg[1]));
+		String dMessage = dFormat.replaceAll("\\[message\\]", ChatColor.stripColor(String.join(" ", cMessage)));
 		TextChannel channel = github.scarsz.discordsrv.DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName(channelName);
 		channel.sendMessage(dMessage).queue();
 	}
