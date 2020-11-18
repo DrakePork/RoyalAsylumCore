@@ -3,7 +3,7 @@ package com.github.drakepork.royalasylumcore.Listeners;
 import com.github.drakepork.royalasylumcore.Core;
 import com.google.inject.Inject;
 import github.scarsz.discordsrv.api.Subscribe;
-import github.scarsz.discordsrv.api.events.DiscordGuildMessagePostProcessEvent;
+import github.scarsz.discordsrv.api.events.DiscordGuildMessagePreProcessEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -13,7 +13,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
-import java.util.ArrayList;
 
 public class Discord {
 	private Core plugin;
@@ -32,19 +31,13 @@ public class Discord {
 		return message;
 	}
 
-	public void commandRun(String msg, String perm, String channelName, String langFormat) {
+	public void commandRun(String msg, String perm, String channelName, String langFormat, String UserName) {
 		File lang = new File(plugin.getDataFolder() + File.separator
 				+ "lang" + File.separator + plugin.getConfig().getString("lang-file"));
 		FileConfiguration langConf = YamlConfiguration.loadConfiguration(lang);
 
-		String[] fullmsg = msg.split(" ");
-		ArrayList cMessage = new ArrayList();
-		for(int i = 3; i < fullmsg.length; i++) {
-			cMessage.add(fullmsg[i]);
-		}
-
-		String message = ChatColor.stripColor(String.join(" ", cMessage));
-		String format = langConf.getString(langFormat).replaceAll("\\[name\\]", ChatColor.stripColor(fullmsg[1]));
+		String message = ChatColor.stripColor(String.join(" ", msg));
+		String format = langConf.getString(langFormat).replaceAll("\\[name\\]", ChatColor.stripColor(UserName));
 		message = format.replaceAll("\\[message\\]", message);
 		for (Player online : Bukkit.getServer().getOnlinePlayers()) {
 			if (online.hasPermission(perm)) {
@@ -53,24 +46,25 @@ public class Discord {
 		}
 		tellConsole(colourMessage(message));
 
-		String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", ChatColor.stripColor(fullmsg[1]));
-		String dMessage = dFormat.replaceAll("\\[message\\]", ChatColor.stripColor(String.join(" ", cMessage)));
+		String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", ChatColor.stripColor(UserName));
+		String dMessage = dFormat.replaceAll("\\[message\\]", ChatColor.stripColor(String.join(" ", msg)));
 		TextChannel channel = github.scarsz.discordsrv.DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName(channelName);
 		channel.sendMessage(dMessage).queue();
 	}
 
 	@Subscribe
-	public void discordMessageProcessed(DiscordGuildMessagePostProcessEvent event) {
+	public void discordMessageProcessed(DiscordGuildMessagePreProcessEvent event) {
 		switch(event.getChannel().getName().toLowerCase()) {
 			case "admin-chat":
 				event.setCancelled(true);
 				new BukkitRunnable() {
 					@Override
 					public void run() {
-						commandRun(event.getProcessedMessage(),
+						commandRun(event.getMessage().getContentRaw(),
 								"royalasylum.chat.admin",
 								"admin-chat",
-								"chat.admin.format");
+								"chat.admin.format",
+								event.getAuthor().getName());
 					}
 				}.runTask(plugin);
 				event.getMessage().delete().queue();
@@ -80,10 +74,11 @@ public class Discord {
 				new BukkitRunnable() {
 					@Override
 					public void run() {
-						commandRun(event.getProcessedMessage(),
+						commandRun(event.getMessage().getContentRaw(),
 								"royalasylum.chat.build",
 								"build-chat",
-								"chat.build.format");
+								"chat.build.format",
+								event.getAuthor().getName());
 					}
 				}.runTask(plugin);
 				event.getMessage().delete().queue();
@@ -93,10 +88,11 @@ public class Discord {
 				new BukkitRunnable() {
 					@Override
 					public void run() {
-						commandRun(event.getProcessedMessage(),
+						commandRun(event.getMessage().getContentRaw(),
 								"royalasylum.chat.guard",
 								"guard-chat",
-								"chat.guard.format");
+								"chat.guard.format",
+								event.getAuthor().getName());
 					}
 				}.runTask(plugin);
 				event.getMessage().delete().queue();
@@ -106,10 +102,11 @@ public class Discord {
 				new BukkitRunnable() {
 					@Override
 					public void run() {
-						commandRun(event.getProcessedMessage(),
+						commandRun(event.getMessage().getContentRaw(),
 								"royalasylum.chat.hunter",
 								"hunter-chat",
-								"chat.hunter.format");
+								"chat.hunter.format",
+								event.getAuthor().getName());
 					}
 				}.runTask(plugin);
 				event.getMessage().delete().queue();
@@ -119,10 +116,11 @@ public class Discord {
 				new BukkitRunnable() {
 					@Override
 					public void run() {
-						commandRun(event.getProcessedMessage(),
+						commandRun(event.getMessage().getContentRaw(),
 								"royalasylum.chat.roundtable",
 								"roundtable-chat",
-								"chat.roundtable.format");
+								"chat.roundtable.format",
+								event.getAuthor().getName());
 					}
 				}.runTask(plugin);
 				event.getMessage().delete().queue();
@@ -132,10 +130,11 @@ public class Discord {
 				new BukkitRunnable() {
 					@Override
 					public void run() {
-						commandRun(event.getProcessedMessage(),
+						commandRun(event.getMessage().getContentRaw(),
 								"royalasylum.chat.report.view",
 								"report-chat",
-								"chat.report.format");
+								"chat.report.format",
+								event.getAuthor().getName());
 					}
 				}.runTask(plugin);
 				event.getMessage().delete().queue();
@@ -145,10 +144,11 @@ public class Discord {
 				new BukkitRunnable() {
 					@Override
 					public void run() {
-						commandRun(event.getProcessedMessage(),
+						commandRun(event.getMessage().getContentRaw(),
 								"royalasylum.chat.discord",
 								"discord-chat",
-								"chat.discord.format");
+								"chat.discord.format",
+								event.getAuthor().getName());
 					}
 				}.runTask(plugin);
 				event.getMessage().delete().queue();
@@ -158,10 +158,11 @@ public class Discord {
 				new BukkitRunnable() {
 					@Override
 					public void run() {
-						commandRun(event.getProcessedMessage(),
+						commandRun(event.getMessage().getContentRaw(),
 								"royalasylum.chat.traitor",
 								"traitor-chat",
-								"chat.traitor.format");
+								"chat.traitor.format",
+								event.getAuthor().getName());
 					}
 				}.runTask(plugin);
 				event.getMessage().delete().queue();

@@ -56,7 +56,7 @@ public class LangCreator {
 			langConf.addDefault("chat.discordSRV.format", "**[name]**: [message]");
 			langConf.addDefault("chat.stickied.enabled", "&aEnabled sticky chat for [chat]");
 			langConf.addDefault("chat.stickied.disabled", "&aDisabled sticky chat for [chat]");
-
+			langConf.addDefault("chat.stickied.swapped", "&aSwapped sticky chat from [oldchat] to [newchat]");
 
 			langConf.options().copyDefaults(true);
 			langConf.save(lang);

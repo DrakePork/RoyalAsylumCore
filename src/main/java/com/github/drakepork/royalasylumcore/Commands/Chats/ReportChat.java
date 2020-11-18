@@ -14,6 +14,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 import java.io.File;
+import java.util.regex.Matcher;
 
 public class ReportChat implements CommandExecutor {
 	private Core plugin;
@@ -47,23 +48,32 @@ public class ReportChat implements CommandExecutor {
 					cMessage = cMessage + args[i] + " ";
 				}
 				player.sendMessage(colourMessage(prefix + langConf.getString("chat.report.success")));
-				String format = langConf.getString("chat.report.format").replaceAll("\\[name\\]", player.getName());
-				String message = format.replaceAll("\\[message\\]", cMessage);
+				String format = langConf.getString("chat.report.format").replaceAll("\\[name\\]", Matcher.quoteReplacement(player.getName()));
+				String message = format.replaceAll("\\[message\\]", Matcher.quoteReplacement(cMessage));
 				for (Player online : Bukkit.getServer().getOnlinePlayers()) {
 					if (online.hasPermission("royalasylum.chat.report.view")) {
 						online.sendMessage(colourMessage(message));
 					}
 				}
 				tellConsole(colourMessage(message));
-				String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", player.getName());
-				String dMessage = dFormat.replaceAll("\\[message\\]", cMessage);
+				String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", Matcher.quoteReplacement(player.getName()));
+				String dMessage = dFormat.replaceAll("\\[message\\]", Matcher.quoteReplacement(cMessage));
 				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("report-chat");
 				channel.sendMessage(dMessage).queue();
 			} else {
 				if(plugin.stickyChatEnabled.containsKey(player.getUniqueId())) {
-					String stickEnabled = langConf.getString("chat.stickied.disabled").replaceAll("\\[chat\\]", "Report");
-					player.sendMessage(colourMessage(prefix + stickEnabled));
-					plugin.stickyChatEnabled.remove(player.getUniqueId());
+					if (plugin.stickyChatEnabled.get(player.getUniqueId()).equals("report-chat")) {
+						String stickEnabled = langConf.getString("chat.stickied.disabled").replaceAll("\\[chat\\]", "report");
+						player.sendMessage(colourMessage(prefix + stickEnabled));
+						plugin.stickyChatEnabled.remove(player.getUniqueId());
+					} else {
+						String[] oldSticky = plugin.stickyChatEnabled.get(player.getUniqueId()).split("-");
+						String oldChat = oldSticky[0].substring(0, 1).toUpperCase() + oldSticky[0].substring(1);
+						String stickSwapped = langConf.getString("chat.stickied.swapped").replaceAll("\\[oldchat\\]", oldChat);
+						stickSwapped = stickSwapped.replaceAll("\\[newchat\\]", "Report");
+						player.sendMessage(colourMessage(prefix + stickSwapped));
+						plugin.stickyChatEnabled.put(player.getUniqueId(), "report-chat");
+					}
 				} else {
 					String stickEnabled = langConf.getString("chat.stickied.enabled").replaceAll("\\[chat\\]", "Report");
 					player.sendMessage(colourMessage(prefix + stickEnabled));
@@ -78,7 +88,7 @@ public class ReportChat implements CommandExecutor {
 				}
 				tellConsole(colourMessage(prefix + langConf.getString("chat.report.success")));
 				String format = langConf.getString("chat.report.format").replaceAll("\\[name\\]", "Console");
-				String message = format.replaceAll("\\[message\\]", cMessage);
+				String message = format.replaceAll("\\[message\\]", Matcher.quoteReplacement(cMessage));
 				for (Player online : Bukkit.getServer().getOnlinePlayers()) {
 					if (online.hasPermission("royalasylum.chat.report.view")) {
 						online.sendMessage(colourMessage(message));
@@ -87,7 +97,7 @@ public class ReportChat implements CommandExecutor {
 				tellConsole(colourMessage(message));
 
 				String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", "Console");
-				String dMessage = dFormat.replaceAll("\\[message\\]", cMessage);
+				String dMessage = dFormat.replaceAll("\\[message\\]", Matcher.quoteReplacement(cMessage));
 				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("report-chat");
 				channel.sendMessage(dMessage).queue();
 			} else {

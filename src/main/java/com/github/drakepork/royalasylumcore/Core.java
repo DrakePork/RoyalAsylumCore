@@ -2,32 +2,35 @@ package com.github.drakepork.royalasylumcore;
 
 import com.Zrips.CMI.CMI;
 import com.Zrips.CMI.Containers.CMIUser;
+import com.github.drakepork.royalasylumcore.Commands.SecretFound;
+import com.github.drakepork.royalasylumcore.Commands.SecretsGUI;
+import com.github.drakepork.royalasylumcore.Commands.ShopGUI;
 import com.github.drakepork.royalasylumcore.Commands.Traitor.*;
 import com.github.drakepork.royalasylumcore.Commands.Chats.*;
 import com.github.drakepork.royalasylumcore.Listeners.Discord;
-import com.github.drakepork.royalasylumcore.Utils.ConfigCreator;
-import com.github.drakepork.royalasylumcore.Utils.LangCreator;
-import com.github.drakepork.royalasylumcore.Utils.PluginReceiver;
+import com.github.drakepork.royalasylumcore.Utils.*;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import github.scarsz.discordsrv.DiscordSRV;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
 import me.realized.tokenmanager.TokenManagerPlugin;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
+import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.HumanEntity;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -45,6 +48,7 @@ public final class Core extends JavaPlugin implements Listener {
 
     public HashMap<UUID, String> stickyChatEnabled = new HashMap<>();
 
+    public HashMap<UUID, Integer> blocksChopped = new HashMap<>();
 
     @Inject private LangCreator lang;
     @Inject private ConfigCreator ConfigCreator;
@@ -60,11 +64,20 @@ public final class Core extends JavaPlugin implements Listener {
     @Inject private ReportChat ReportChat;
     @Inject private RoundTableChat RoundTableChat;
     @Inject private TraitorChat TraitorChat;
-
+    @Inject private ShopGUI ShopGUI;
+    @Inject private SecretsGUI SecretsGUI;
+    @Inject private SecretFound SecretFound;
 
     private Discord Discord = new Discord(this);
 
-
+    public Integer getBlocksChopped(Player player) {
+        Integer amount = 1;
+        if(blocksChopped.containsKey(player.getUniqueId())) {
+            amount = blocksChopped.get(player.getUniqueId());
+        }
+        blocksChopped.remove(player.getUniqueId());
+        return amount;
+    }
 
     @Override
     public void onEnable() {
@@ -90,6 +103,33 @@ public final class Core extends JavaPlugin implements Listener {
             }
         }
 
+        File secretFile = new File(this.getDataFolder() + File.separator
+                + "secrets.yml");
+        if(!secretFile.exists()) {
+            try {
+                secretFile.createNewFile();
+                getLogger().info("File secrets.yml successfully created!");
+            } catch (IOException e) {
+                getLogger().info("File secrets.yml failed to create!");
+            }
+        }
+
+        File secretsDataFile = new File(this.getDataFolder() + File.separator
+                + "secretsdata.yml");
+        if(!secretsDataFile.exists()) {
+            try {
+                secretsDataFile.createNewFile();
+                getLogger().info("File secrets.yml successfully created!");
+            } catch (IOException e) {
+                getLogger().info("File secrets.yml failed to create!");
+            }
+        }
+
+        if(Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            getLogger().info("Placeholders registered");
+            new RoyalPlaceholderExpansion(this).register();
+        }
+
         getCommand("traitor").setExecutor(this.TraitorRun);
         getCommand("traitortrack").setExecutor(this.TraitorTrack);
         getCommand("traitorcheck").setExecutor(this.TraitorCheck);
@@ -102,13 +142,17 @@ public final class Core extends JavaPlugin implements Listener {
         getCommand("rtc").setExecutor(this.RoundTableChat);
         getCommand("tc").setExecutor(this.TraitorChat);
         getCommand("hunt").setExecutor(this.HunterChat);
+        getCommand("royalshop").setExecutor(this.ShopGUI);
+        getCommand("secrets").setExecutor(this.SecretsGUI);
+        getCommand("secretfound").setExecutor(this.SecretFound);
 
-        getLogger().info("Enabled RoyalAsylumCore - v" + getDescription().getVersion());
+
+        getLogger().info("Enabled RoyalAsylumCore v" + getDescription().getVersion());
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("Disabled RoyalAsylumCore - v" + getDescription().getVersion());
+        getLogger().info("Disabled RoyalAsylumCore v" + getDescription().getVersion());
         DiscordSRV.api.unsubscribe(Discord);
     }
 
@@ -140,8 +184,8 @@ public final class Core extends JavaPlugin implements Listener {
             String[] split = stickiedChat.split("-");
 
             String message = event.getMessage();
-            String format = langConf.getString("chat." + split[0] + ".format").replaceAll("\\[name\\]", player.getName());
-            message = format.replaceAll("\\[message\\]", message);
+            String format = langConf.getString("chat." + split[0] + ".format").replaceAll("\\[name\\]", Matcher.quoteReplacement(player.getName()));
+            message = format.replaceAll("\\[message\\]", Matcher.quoteReplacement(message));
             for (Player online : Bukkit.getServer().getOnlinePlayers()) {
                 if (online.hasPermission("royalasylum.chat." + split[0])) {
                     online.sendMessage(translateHexColorCodes(ChatColor.translateAlternateColorCodes('&', message)));
@@ -149,6 +193,11 @@ public final class Core extends JavaPlugin implements Listener {
             }
 
             Bukkit.getConsoleSender().sendMessage(translateHexColorCodes(ChatColor.translateAlternateColorCodes('&', message)));
+
+            String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", Matcher.quoteReplacement(player.getName()));
+            String dMessage = dFormat.replaceAll("\\[message\\]", Matcher.quoteReplacement(event.getMessage()));
+            TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName(split[0] + "-chat");
+            channel.sendMessage(dMessage).queue();
         }
     }
 
@@ -172,6 +221,8 @@ public final class Core extends JavaPlugin implements Listener {
             case "/minecraft:me":
             case "/?":
             case "/help":
+            case "/whisper":
+            case "/w":
                 if(!event.getPlayer().isOp()) {
                     event.setCancelled(true);
                     event.getPlayer().sendMessage(ChatColor.WHITE + "Unknown command. Type " + '"' + "/help" + '"' + " for help.");
@@ -191,22 +242,110 @@ public final class Core extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void islarroCraft(CraftItemEvent event) {
-        if(event.getWhoClicked() instanceof HumanEntity) {
-            Player player = (Player) event.getWhoClicked();
-            if(player.getUniqueId().toString().equalsIgnoreCase("2b8cf1ca-1c7f-4529-a5a7-62433fe16460")) {
-                if(event.getResult().equals(Material.CAKE)) {
-                    event.setCancelled(true);
-                    ItemStack cake = new ItemStack(Material.CAKE, 1);
-                    ItemMeta cakeMeta = cake.getItemMeta();
-                    cakeMeta.setDisplayName(ChatColor.WHITE + "Bread Cake");
-                    player.getInventory().addItem(cake);
-                } else if(event.getResult().equals(Material.BREAD)) {
-                    event.setCancelled(true);
-                    ItemStack bread = new ItemStack(Material.BREAD, 1);
-                    ItemMeta breadMeta = bread.getItemMeta();
-                    breadMeta.setDisplayName(ChatColor.WHITE + "Breadest Bread");
-                    player.getInventory().addItem(bread);
+    public void leavesDecay(LeavesDecayEvent event) {
+        if(event.getBlock().getLocation().getWorld().getName().equalsIgnoreCase("prisonbuild")) {
+            if(event.getBlock().getType() == Material.BIRCH_LEAVES) {
+                if (Math.random() < 0.025) {
+                    ItemStack apple = new ItemStack(Material.APPLE, 1);
+                    event.getBlock().getLocation().getWorld().dropItem(event.getBlock().getLocation(), apple);
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void blockBreak(BlockBreakEvent event) {
+        Block b = event.getBlock();
+        Location loc = b.getLocation();
+        if(!event.isCancelled()) {
+            if (b.getType() == Material.BIRCH_LOG && loc.getWorld().getName().equalsIgnoreCase("prisonbuild")) {
+                ArrayList axes = new ArrayList();
+                axes.add(Material.DIAMOND_AXE);
+                axes.add(Material.GOLDEN_AXE);
+                axes.add(Material.IRON_AXE);
+                axes.add(Material.STONE_AXE);
+                axes.add(Material.WOODEN_AXE);
+                axes.add(Material.NETHERITE_AXE);
+                if(axes.contains(event.getPlayer().getInventory().getItemInMainHand().getType())) {
+                    if (!event.getPlayer().isSneaking()) {
+                        Boolean birchDown = true;
+                        int birchDrops = 0;
+                        Location birchLoc;
+                        Location saplingLoc;
+                        int i = 0;
+                        while (birchDown) {
+                            birchLoc = new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY() - i, loc.getBlockZ());
+                            if (birchLoc.getBlock().getType() == Material.BIRCH_LOG) {
+                                birchLoc.getBlock().breakNaturally();
+                                birchDrops++;
+                                i++;
+                            } else {
+                                saplingLoc = new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY() - i + 1, loc.getBlockZ());
+                                Location finalSaplingLoc = saplingLoc;
+                                if (birchLoc.getBlock().getType() == Material.GRASS_BLOCK || birchLoc.getBlock().getType() == Material.DIRT) {
+                                    getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+                                        public void run() {
+                                            finalSaplingLoc.getBlock().setType(Material.BIRCH_SAPLING);
+                                        }
+                                    }, 2L);
+                                }
+                                birchDown = false;
+                            }
+                        }
+                        Boolean birchUp = true;
+                        int x = 1;
+                        while (birchUp) {
+                            birchLoc = new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY() + x, loc.getBlockZ());
+                            if (birchLoc.getBlock().getType() == Material.BIRCH_LOG) {
+                                birchLoc.getBlock().breakNaturally();
+                                birchDrops++;
+                                x++;
+                            } else {
+                                birchUp = false;
+                            }
+                        }
+
+                        blocksChopped.put(event.getPlayer().getUniqueId(), birchDrops);
+
+                        ItemStack item = event.getPlayer().getInventory().getItemInMainHand();
+                        Damageable im = (Damageable) item.getItemMeta();
+                        Material axe = item.getType();
+                        int dmg = im.getDamage();
+                        if (item.containsEnchantment(Enchantment.DURABILITY)) {
+                            int enchantLevel = item.getEnchantmentLevel(Enchantment.DURABILITY);
+                            if (birchDrops / enchantLevel + dmg > axe.getMaxDurability()) {
+                                event.getPlayer().getInventory().remove(item);
+                            } else {
+                                im.setDamage(birchDrops / enchantLevel + dmg);
+                                item.setItemMeta((ItemMeta) im);
+                            }
+                        } else {
+                            if (birchDrops + dmg > axe.getMaxDurability()) {
+                                event.getPlayer().getInventory().remove(item);
+                            } else {
+                                im.setDamage(birchDrops + dmg);
+                                item.setItemMeta((ItemMeta) im);
+                            }
+                        }
+                    } else {
+                        Location newLoc = new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY() - 1, loc.getBlockZ());
+                        if (newLoc.getBlock().getType() == Material.GRASS_BLOCK || newLoc.getBlock().getType() == Material.DIRT) {
+                            getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+                                public void run() {
+                                    loc.getBlock().setType(Material.BIRCH_SAPLING);
+                                }
+                            }, 2L);
+                        }
+                    }
+                } else {
+                    Location newLoc = new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY() - 1, loc.getBlockZ());
+                    if (newLoc.getBlock().getType() == Material.GRASS_BLOCK || newLoc.getBlock().getType() == Material.DIRT) {
+                        getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+                            public void run() {
+                                loc.getBlock().setType(Material.BIRCH_SAPLING);
+                            }
+                        }, 2L);
+                    }
                 }
             }
         }
@@ -251,7 +390,7 @@ public final class Core extends JavaPlugin implements Listener {
                     + "traitors.yml");
             FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
             Set<String> traitorList = traitors.getKeys(false);
-            if (player.getWorld().getName().equalsIgnoreCase("world") && !traitorList.contains(player.getUniqueId().toString())) {
+            if (player.getWorld().getName().equalsIgnoreCase("traitor") && !traitorList.contains(player.getUniqueId().toString())) {
                 CMIUser user = CMI.getInstance().getPlayerManager().getUser(player);
                 Long lastLogOff = System.currentTimeMillis() - user.getLastLogoff();
                 if (lastLogOff >= TimeUnit.MINUTES.toMillis(config.getInt("cooldowns.login-badlands-delay"))) {
@@ -640,6 +779,10 @@ public final class Core extends JavaPlugin implements Listener {
                         player.sendMessage(ChatColor.RED + "You do not have enough tokens!");
                     }
                 }
+            }
+        } else if (ChatColor.stripColor(event.getView().getTitle()).equalsIgnoreCase("Secrets")) {
+            if (event.getCurrentItem() != null) {
+                event.setCancelled(true);
             }
         }
     }

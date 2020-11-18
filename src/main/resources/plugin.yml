@@ -2,7 +2,7 @@ name: RoyalAsylumCore
 version: ${project.version}
 main: com.github.drakepork.royalasylumcore.Core
 api-version: 1.16
-depend: [CMI, TokenManager, DiscordSRV]
+depend: [CMI, TokenManager, DiscordSRV, PlaceholderAPI]
 authors: [DrakePork]
 description: Wham
 commands:
@@ -61,9 +61,23 @@ commands:
     usage: /<command>
     permission: royalasylum.chat.traitor
     permission-message: §4Error:§c You do not have permission to execute this command...
-
-
-
+  royalshop:
+    description: some shopgui stuff
+    usage: /<command>
+    permission: royalasylum.shopgui
+    permission-message: §4Error:§c You do not have permission to execute this command...
+  secrets:
+    description: SecretsGUI
+    aliases:
+      - secret
+    usage: /<command>
+    permission: royalasylum.secrets
+    permission-message: §4Error:§c You do not have permission to execute this command...
+  secretfound:
+    description: SecretFound
+    usage: /<command>
+    permission: royalasylum.secretfound
+    permission-message: §4Error:§c You do not have permission to execute this command...
 permissions:
   royalasylum.traitor:
     description: Gives you access to /traitor commands
@@ -86,6 +100,10 @@ permissions:
   royalasylum.chat.report.view:
     description: Gives you access to view /report command
   royalasylum.chat.roundtable:
-    description: Gives you access to /a command
+    description: Gives you access to /rtc command
   royalasylum.chat.traitor:
-    description: Gives you access to /a command
+    description: Gives you access to /tc command
+  royalasylum.chat.secrets:
+    description: Gives you access to /royalshop command
+  royalasylum.chat.secretfound:
+    description: Gives you access to /secretfound command

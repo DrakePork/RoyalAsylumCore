@@ -14,6 +14,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 import java.io.File;
+import java.util.regex.Matcher;
 
 public class BuildChat implements CommandExecutor {
 	private Core plugin;
@@ -46,8 +47,8 @@ public class BuildChat implements CommandExecutor {
 				for (int i = 0; i < args.length; i++) {
 					cMessage = cMessage + args[i] + " ";
 				}
-				String format = langConf.getString("chat.build.format").replaceAll("\\[name\\]", player.getName());
-				String message = format.replaceAll("\\[message\\]", cMessage);
+				String format = langConf.getString("chat.build.format").replaceAll("\\[name\\]", Matcher.quoteReplacement(player.getName()));
+				String message = format.replaceAll("\\[message\\]", Matcher.quoteReplacement(cMessage));
 				for (Player online : Bukkit.getServer().getOnlinePlayers()) {
 					if (online.hasPermission("royalasylum.chat.build")) {
 						online.sendMessage(colourMessage(message));
@@ -55,15 +56,24 @@ public class BuildChat implements CommandExecutor {
 				}
 				tellConsole(colourMessage(message));
 
-				String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", player.getName());
-				String dMessage = dFormat.replaceAll("\\[message\\]", cMessage);
+				String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", Matcher.quoteReplacement(player.getName()));
+				String dMessage = dFormat.replaceAll("\\[message\\]", Matcher.quoteReplacement(cMessage));
 				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("build-chat");
 				channel.sendMessage(dMessage).queue();
 			} else {
 				if(plugin.stickyChatEnabled.containsKey(player.getUniqueId())) {
-					String stickEnabled = langConf.getString("chat.stickied.disabled").replaceAll("\\[chat\\]", "Build");
-					player.sendMessage(colourMessage(prefix + stickEnabled));
-					plugin.stickyChatEnabled.remove(player.getUniqueId());
+					if (plugin.stickyChatEnabled.get(player.getUniqueId()).equals("build-chat")) {
+						String stickEnabled = langConf.getString("chat.stickied.disabled").replaceAll("\\[chat\\]", "Build");
+						player.sendMessage(colourMessage(prefix + stickEnabled));
+						plugin.stickyChatEnabled.remove(player.getUniqueId());
+					} else {
+						String[] oldSticky = plugin.stickyChatEnabled.get(player.getUniqueId()).split("-");
+						String oldChat = oldSticky[0].substring(0, 1).toUpperCase() + oldSticky[0].substring(1);
+						String stickSwapped = langConf.getString("chat.stickied.swapped").replaceAll("\\[oldchat\\]", Matcher.quoteReplacement(oldChat));
+						stickSwapped = stickSwapped.replaceAll("\\[newchat\\]", "Build");
+						player.sendMessage(colourMessage(prefix + stickSwapped));
+						plugin.stickyChatEnabled.put(player.getUniqueId(), "build-chat");
+					}
 				} else {
 					String stickEnabled = langConf.getString("chat.stickied.enabled").replaceAll("\\[chat\\]", "Build");
 					player.sendMessage(colourMessage(prefix + stickEnabled));
@@ -77,7 +87,7 @@ public class BuildChat implements CommandExecutor {
 					cMessage = cMessage + args[i] + " ";
 				}
 				String format = langConf.getString("chat.build.format").replaceAll("\\[name\\]", "Console");
-				String message = format.replaceAll("\\[message\\]", cMessage);
+				String message = format.replaceAll("\\[message\\]", Matcher.quoteReplacement(cMessage));
 				for (Player online : Bukkit.getServer().getOnlinePlayers()) {
 					if (online.hasPermission("royalasylum.chat.build")) {
 						online.sendMessage(colourMessage(message));
@@ -86,7 +96,7 @@ public class BuildChat implements CommandExecutor {
 				tellConsole(colourMessage(message));
 
 				String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", "Console");
-				String dMessage = dFormat.replaceAll("\\[message\\]", cMessage);
+				String dMessage = dFormat.replaceAll("\\[message\\]", Matcher.quoteReplacement(cMessage));
 				TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName("build-chat");
 				channel.sendMessage(dMessage).queue();
 			} else {
