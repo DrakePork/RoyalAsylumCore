@@ -2,9 +2,7 @@ package com.github.drakepork.royalasylumcore.Commands;
 
 import com.github.drakepork.royalasylumcore.Core;
 import com.google.inject.Inject;
-import net.brcdev.shopgui.ShopGuiPlugin;
 import net.brcdev.shopgui.ShopGuiPlusApi;
-import net.brcdev.shopgui.shop.Shop;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -18,15 +16,6 @@ public class ShopGUI implements CommandExecutor {
 	@Inject
 	public ShopGUI(Core plugin) {
 		this.plugin = plugin;
-	}
-
-	public void tellConsole(String message){
-		Bukkit.getConsoleSender().sendMessage(message);
-	}
-
-	public String colourMessage(String message){
-		message = plugin.translateHexColorCodes(ChatColor.translateAlternateColorCodes('&', message));
-		return message;
 	}
 
 	@Override

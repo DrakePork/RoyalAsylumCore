@@ -28,17 +28,6 @@ public class TraitorRun implements CommandExecutor {
 		this.plugin = plugin;
 	}
 
-	public void tellConsole(String message){
-		Bukkit.getConsoleSender().sendMessage(message);
-	}
-
-	public String ColourMessage(String message){
-		message = plugin.translateHexColorCodes(ChatColor.translateAlternateColorCodes('&', message));
-		return message;
-	}
-
-
-
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		File f = new File(plugin.getDataFolder() + File.separator
 				+ "traitors.yml");

@@ -2,6 +2,15 @@ package com.github.drakepork.royalasylumcore;
 
 import com.Zrips.CMI.CMI;
 import com.Zrips.CMI.Containers.CMIUser;
+import com.bencodez.votingplugin.user.UserManager;
+import com.bencodez.votingplugin.user.VotingPluginUser;
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.events.PacketEvent;
 import com.github.drakepork.royalasylumcore.Commands.SecretFound;
 import com.github.drakepork.royalasylumcore.Commands.SecretsGUI;
 import com.github.drakepork.royalasylumcore.Commands.ShopGUI;
@@ -19,6 +28,7 @@ import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -32,6 +42,8 @@ import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -64,6 +76,8 @@ public final class Core extends JavaPlugin implements Listener {
     @Inject private ReportChat ReportChat;
     @Inject private RoundTableChat RoundTableChat;
     @Inject private TraitorChat TraitorChat;
+    @Inject private SecretChat SecretChat;
+
     @Inject private ShopGUI ShopGUI;
     @Inject private SecretsGUI SecretsGUI;
     @Inject private SecretFound SecretFound;
@@ -142,18 +156,49 @@ public final class Core extends JavaPlugin implements Listener {
         getCommand("rtc").setExecutor(this.RoundTableChat);
         getCommand("tc").setExecutor(this.TraitorChat);
         getCommand("hunt").setExecutor(this.HunterChat);
+        getCommand("s").setExecutor(this.SecretChat);
+
         getCommand("royalshop").setExecutor(this.ShopGUI);
         getCommand("secrets").setExecutor(this.SecretsGUI);
         getCommand("secretfound").setExecutor(this.SecretFound);
 
 
         getLogger().info("Enabled RoyalAsylumCore v" + getDescription().getVersion());
+
+
+        ProtocolManager manager = ProtocolLibrary.getProtocolManager();
+        manager.addPacketListener(new PacketAdapter(this, ListenerPriority.NORMAL, PacketType.Play.Server.CHAT) {
+            @Override
+            public void onPacketSending(PacketEvent event) {
+                if (event.getPacketType() == PacketType.Play.Server.CHAT) {
+                    PacketContainer packet = event.getPacket();
+                    if(packet.getChatComponents().read(0).toString() != null && !packet.getChatComponents().read(0).toString().isEmpty()) {
+                        if (packet.getChatComponents().read(0).toString() instanceof String) {
+                            String chatMsg = packet.getChatComponents().read(0).toString();
+                            if (chatMsg.contains("Next ranks:")) {
+                                event.setCancelled(true);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
     }
 
     @Override
     public void onDisable() {
         getLogger().info("Disabled RoyalAsylumCore v" + getDescription().getVersion());
         DiscordSRV.api.unsubscribe(Discord);
+    }
+
+    public String colourMessage(String message){
+        message = translateHexColorCodes(ChatColor.translateAlternateColorCodes('&', message));
+        return message;
+    }
+
+    public void tellConsole(String message){
+        Bukkit.getConsoleSender().sendMessage(message);
     }
 
 
@@ -220,9 +265,6 @@ public final class Core extends JavaPlugin implements Listener {
             case "/minecraft:help":
             case "/minecraft:me":
             case "/?":
-            case "/help":
-            case "/whisper":
-            case "/w":
                 if(!event.getPlayer().isOp()) {
                     event.setCancelled(true);
                     event.getPlayer().sendMessage(ChatColor.WHITE + "Unknown command. Type " + '"' + "/help" + '"' + " for help.");
@@ -242,7 +284,7 @@ public final class Core extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void leavesDecay(LeavesDecayEvent event) {
+    public void birchLeavesAppleDrop(LeavesDecayEvent event) {
         if(event.getBlock().getLocation().getWorld().getName().equalsIgnoreCase("prisonbuild")) {
             if(event.getBlock().getType() == Material.BIRCH_LEAVES) {
                 if (Math.random() < 0.025) {
@@ -254,7 +296,7 @@ public final class Core extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void blockBreak(BlockBreakEvent event) {
+    public void birchBreak(BlockBreakEvent event) {
         Block b = event.getBlock();
         Location loc = b.getLocation();
         if(!event.isCancelled()) {
@@ -565,9 +607,8 @@ public final class Core extends JavaPlugin implements Listener {
     }
 
 
-
     @EventHandler
-    public void invClick(InventoryClickEvent event) {
+    public void clickGUI(InventoryClickEvent event) {
         File f = new File(this.getDataFolder() + File.separator
                 + "traitors.yml");
         FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
@@ -780,9 +821,115 @@ public final class Core extends JavaPlugin implements Listener {
                     }
                 }
             }
-        } else if (ChatColor.stripColor(event.getView().getTitle()).equalsIgnoreCase("Secrets")) {
+        } else if (ChatColor.stripColor(event.getView().getTitle()).contains("Secrets")) {
             if (event.getCurrentItem() != null) {
                 event.setCancelled(true);
+            }
+            String[] title = event.getView().getTitle().split(" - ");
+            HumanEntity human = event.getWhoClicked();
+            if (human instanceof Player) {
+                switch (title[1].toLowerCase()) {
+                    case "peasant":
+                    case "farmer":
+                    case "craftsman":
+                    case "vassal":
+                    case "noble":
+                    case "baron":
+                    case "viscount":
+                    case "earl":
+                    case "other":
+                        if (event.getSlot() == 40) {
+                            SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "secrets");
+                        }
+                        break;
+                    case "all":
+                        switch (event.getSlot()) {
+                            case 31:
+                                SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "main-menu");
+                                break;
+                            case 11:
+                                SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "peasant");
+                                break;
+                            case 12:
+                                SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "farmer");
+                                break;
+                            case 13:
+                                SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "craftsman");
+                                break;
+                            case 14:
+                                SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "vassal");
+                                break;
+                            case 15:
+                                SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "noble");
+                                break;
+                            case 20:
+                                SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "baron");
+                                break;
+                            case 21:
+                                SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "viscount");
+                                break;
+                            case 22:
+                                SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "earl");
+                                break;
+                            case 23:
+                                SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "other");
+                                break;
+                        }
+                        break;
+                    case "rewards":
+                        if (event.getCurrentItem() == null) {
+                            break;
+                        }
+                        if (event.getSlot() == 49) {
+                            SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "main-menu");
+                        } else if (event.getCurrentItem().getType().equals(Material.CHEST_MINECART)) {
+                            Player player = Bukkit.getPlayer(human.getName());
+                            File rewardsDataFile = new File(this.getDataFolder() + File.separator
+                                    + "rewardsdata.yml");
+                            YamlConfiguration rData = YamlConfiguration.loadConfiguration(rewardsDataFile);
+                            File secretsDataFile = new File(this.getDataFolder() + File.separator
+                                    + "secretsdata.yml");
+                            YamlConfiguration pData = YamlConfiguration.loadConfiguration(secretsDataFile);
+                            ItemStack currItem = event.getCurrentItem();
+                            NamespacedKey key = new NamespacedKey(this, "reward");
+                            ItemMeta itemMeta = currItem.getItemMeta();
+                            PersistentDataContainer container = itemMeta.getPersistentDataContainer();
+                            String foundValue;
+                            if(container.has(key, PersistentDataType.STRING)) {
+                                foundValue = container.get(key, PersistentDataType.STRING);
+                                if(rData.getString(foundValue + ".reward-type").equalsIgnoreCase("points")) {
+                                    int pointAmount = rData.getInt(foundValue + ".reward");
+                                    VotingPluginUser user = UserManager.getInstance().getVotingPluginUser(player);
+                                    Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+                                        public void run() {
+                                            user.addPoints(pointAmount);
+                                        }});
+                                    pData.set(player.getUniqueId().toString() + ".rewards." + foundValue + ".collected", true);
+                                    try {
+                                        pData.save(secretsDataFile);
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                    player.sendMessage(colourMessage("&f[&eSecrets&f] &aYou received " + pointAmount + " points!"));
+                                    SecretsGUI.openGUI(player, "rewards");
+                                } else if(rData.getString(foundValue + ".reward-type").equalsIgnoreCase("tokens")) {
+
+                                }
+                            }
+                        }
+                        break;
+                    case "main":
+                        switch(event.getSlot()) {
+                            case 13:
+                                break;
+                            case 20:
+                                SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "secrets");
+                                break;
+                            case 24:
+                                SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "rewards");
+                                break;
+                        }
+                }
             }
         }
     }

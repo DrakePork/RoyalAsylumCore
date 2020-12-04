@@ -62,16 +62,6 @@ public class RoyalPlaceholderExpansion extends PlaceholderExpansion {
 		if(quest.size() == 1) {
 			quest.add("");
 		}
-
-		// %someplugin_placeholder1%
-		if(identifier.equals("quest1")){
-			return quest.get(0);
-		}
-
-		if(identifier.equals("quest2")){
-			return quest.get(1);
-		}
-
 		return null;
 	}
 }

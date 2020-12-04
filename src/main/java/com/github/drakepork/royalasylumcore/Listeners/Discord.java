@@ -22,150 +22,65 @@ public class Discord {
 		this.plugin = plugin;
 	}
 
-	public void tellConsole(String message){
-		Bukkit.getConsoleSender().sendMessage(message);
-	}
+	public void commandRun(DiscordGuildMessagePreProcessEvent event, String perm, String channelName, String langFormat) {
+		event.setCancelled(true);
+		String msg = event.getMessage().getContentRaw();
+		String UserName = event.getAuthor().getName();
+		new BukkitRunnable() {
+			@Override
+			public void run() {
+				File lang = new File(plugin.getDataFolder() + File.separator
+						+ "lang" + File.separator + plugin.getConfig().getString("lang-file"));
+				FileConfiguration langConf = YamlConfiguration.loadConfiguration(lang);
 
-	public String colourMessage(String message){
-		message = plugin.translateHexColorCodes(ChatColor.translateAlternateColorCodes('&', message));
-		return message;
-	}
+				String message = ChatColor.stripColor(String.join(" ", msg));
+				String format = langConf.getString(langFormat).replaceAll("\\[name\\]", ChatColor.stripColor(UserName));
+				message = format.replaceAll("\\[message\\]", message);
+				for (Player online : Bukkit.getServer().getOnlinePlayers()) {
+					if (online.hasPermission(perm)) {
+						online.sendMessage(plugin.colourMessage(message));
+					}
+				}
+				plugin.tellConsole(plugin.colourMessage(message));
 
-	public void commandRun(String msg, String perm, String channelName, String langFormat, String UserName) {
-		File lang = new File(plugin.getDataFolder() + File.separator
-				+ "lang" + File.separator + plugin.getConfig().getString("lang-file"));
-		FileConfiguration langConf = YamlConfiguration.loadConfiguration(lang);
-
-		String message = ChatColor.stripColor(String.join(" ", msg));
-		String format = langConf.getString(langFormat).replaceAll("\\[name\\]", ChatColor.stripColor(UserName));
-		message = format.replaceAll("\\[message\\]", message);
-		for (Player online : Bukkit.getServer().getOnlinePlayers()) {
-			if (online.hasPermission(perm)) {
-				online.sendMessage(colourMessage(message));
+				String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", ChatColor.stripColor(UserName));
+				String dMessage = dFormat.replaceAll("\\[message\\]", ChatColor.stripColor(String.join(" ", msg)));
+				TextChannel channel = github.scarsz.discordsrv.DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName(channelName);
+				channel.sendMessage(dMessage).queue();
 			}
-		}
-		tellConsole(colourMessage(message));
-
-		String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", ChatColor.stripColor(UserName));
-		String dMessage = dFormat.replaceAll("\\[message\\]", ChatColor.stripColor(String.join(" ", msg)));
-		TextChannel channel = github.scarsz.discordsrv.DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName(channelName);
-		channel.sendMessage(dMessage).queue();
+		}.runTask(plugin);
+		event.getMessage().delete().queue();
 	}
 
 	@Subscribe
 	public void discordMessageProcessed(DiscordGuildMessagePreProcessEvent event) {
 		switch(event.getChannel().getName().toLowerCase()) {
 			case "admin-chat":
-				event.setCancelled(true);
-				new BukkitRunnable() {
-					@Override
-					public void run() {
-						commandRun(event.getMessage().getContentRaw(),
-								"royalasylum.chat.admin",
-								"admin-chat",
-								"chat.admin.format",
-								event.getAuthor().getName());
-					}
-				}.runTask(plugin);
-				event.getMessage().delete().queue();
+				commandRun(event, "royalasylum.chat.admin", "admin-chat", "chat.admin.format");
 				break;
 			case "build-chat":
-				event.setCancelled(true);
-				new BukkitRunnable() {
-					@Override
-					public void run() {
-						commandRun(event.getMessage().getContentRaw(),
-								"royalasylum.chat.build",
-								"build-chat",
-								"chat.build.format",
-								event.getAuthor().getName());
-					}
-				}.runTask(plugin);
-				event.getMessage().delete().queue();
+				commandRun(event, "royalasylum.chat.build", "build-chat", "chat.build.format");
 				break;
 			case "guard-chat":
-				event.setCancelled(true);
-				new BukkitRunnable() {
-					@Override
-					public void run() {
-						commandRun(event.getMessage().getContentRaw(),
-								"royalasylum.chat.guard",
-								"guard-chat",
-								"chat.guard.format",
-								event.getAuthor().getName());
-					}
-				}.runTask(plugin);
-				event.getMessage().delete().queue();
+				commandRun(event, "royalasylum.chat.guard", "guard-chat", "chat.guard.format");
 				break;
 			case "hunter-chat":
-				event.setCancelled(true);
-				new BukkitRunnable() {
-					@Override
-					public void run() {
-						commandRun(event.getMessage().getContentRaw(),
-								"royalasylum.chat.hunter",
-								"hunter-chat",
-								"chat.hunter.format",
-								event.getAuthor().getName());
-					}
-				}.runTask(plugin);
-				event.getMessage().delete().queue();
+				commandRun(event, "royalasylum.chat.hunter", "hunter-chat", "chat.hunter.format");
 				break;
 			case "roundtable-chat":
-				event.setCancelled(true);
-				new BukkitRunnable() {
-					@Override
-					public void run() {
-						commandRun(event.getMessage().getContentRaw(),
-								"royalasylum.chat.roundtable",
-								"roundtable-chat",
-								"chat.roundtable.format",
-								event.getAuthor().getName());
-					}
-				}.runTask(plugin);
-				event.getMessage().delete().queue();
+				commandRun(event, "royalasylum.chat.roundtable", "roundtable-chat", "chat.roundtable.format");
 				break;
 			case "report-chat":
-				event.setCancelled(true);
-				new BukkitRunnable() {
-					@Override
-					public void run() {
-						commandRun(event.getMessage().getContentRaw(),
-								"royalasylum.chat.report.view",
-								"report-chat",
-								"chat.report.format",
-								event.getAuthor().getName());
-					}
-				}.runTask(plugin);
-				event.getMessage().delete().queue();
+				commandRun(event, "royalasylum.chat.report", "report-chat", "chat.report.format");
 				break;
 			case "discord-chat":
-				event.setCancelled(true);
-				new BukkitRunnable() {
-					@Override
-					public void run() {
-						commandRun(event.getMessage().getContentRaw(),
-								"royalasylum.chat.discord",
-								"discord-chat",
-								"chat.discord.format",
-								event.getAuthor().getName());
-					}
-				}.runTask(plugin);
-				event.getMessage().delete().queue();
+				commandRun(event, "royalasylum.chat.discord", "discord-chat", "chat.discord.format");
 				break;
 			case "traitor-chat":
-				event.setCancelled(true);
-				new BukkitRunnable() {
-					@Override
-					public void run() {
-						commandRun(event.getMessage().getContentRaw(),
-								"royalasylum.chat.traitor",
-								"traitor-chat",
-								"chat.traitor.format",
-								event.getAuthor().getName());
-					}
-				}.runTask(plugin);
-				event.getMessage().delete().queue();
+				commandRun(event, "royalasylum.chat.traitor", "traitor-chat", "chat.traitor.format");
+				break;
+			case "secret-chat":
+				commandRun(event, "royalasylum.chat.secret", "secret-chat", "chat.secret.format");
 				break;
 
 		}

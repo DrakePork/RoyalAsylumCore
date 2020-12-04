@@ -33,15 +33,6 @@ public class TraitorTrack implements CommandExecutor {
 		this.plugin = plugin;
 	}
 
-	public void tellConsole(String message){
-		Bukkit.getConsoleSender().sendMessage(message);
-	}
-
-	public String ColourMessage(String message){
-		message = plugin.translateHexColorCodes(ChatColor.translateAlternateColorCodes('&', message));
-		return message;
-	}
-
 	public void chooseType (Player player, Player traitor) {
 		FileConfiguration config = plugin.getConfig();
 		Inventory chooseTrack = Bukkit.createInventory(null, 27, ChatColor.RED + "Tracking: " + traitor.getName());

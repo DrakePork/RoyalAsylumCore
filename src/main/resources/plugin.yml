@@ -2,9 +2,9 @@ name: RoyalAsylumCore
 version: ${project.version}
 main: com.github.drakepork.royalasylumcore.Core
 api-version: 1.16
-depend: [CMI, TokenManager, DiscordSRV, PlaceholderAPI]
+depend: [CMI, TokenManager, DiscordSRV, PlaceholderAPI, WorldEdit, WorldGuard, ShopGUIPlus, ProtocolLib]
 authors: [DrakePork]
-description: Wham
+description: Core plugin for RoyalAsylum
 commands:
   traitor:
     description: Traitor Stuff
@@ -40,6 +40,11 @@ commands:
     description: GuardChat
     usage: /<command>
     permission: royalasylum.chat.guard
+    permission-message: §4Error:§c You do not have permission to execute this command...
+  s:
+    description: SecretChat
+    usage: /<command>
+    permission: royalasylum.chat.secret
     permission-message: §4Error:§c You do not have permission to execute this command...
   hunt:
     description: HunterChat
@@ -103,7 +108,9 @@ permissions:
     description: Gives you access to /rtc command
   royalasylum.chat.traitor:
     description: Gives you access to /tc command
-  royalasylum.chat.secrets:
+  royalasylum.secrets:
     description: Gives you access to /royalshop command
-  royalasylum.chat.secretfound:
+  royalasylum.secretfound:
+    description: Gives you access to /secretfound command
+  royalasylum.chat.secret:
     description: Gives you access to /secretfound command

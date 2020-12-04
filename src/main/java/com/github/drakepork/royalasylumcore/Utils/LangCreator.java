@@ -1,6 +1,7 @@
 package com.github.drakepork.royalasylumcore.Utils;
 
 import com.google.inject.Inject;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import com.github.drakepork.royalasylumcore.Core;
@@ -53,10 +54,21 @@ public class LangCreator {
 			langConf.addDefault("chat.hunter.format", "&8&l(&6&lHUNTER&8&l) &8[name]: &f[message]");
 			langConf.addDefault("chat.hunter.wrong-usage", "&cWrong Usage! /hunt <message>");
 
+			langConf.addDefault("chat.secret.format", "&8&l(&e&lSECRET&8&l) &8[name]: &f[message]");
+			langConf.addDefault("chat.secret.wrong-usage", "&cWrong Usage! /secret <message>");
+
 			langConf.addDefault("chat.discordSRV.format", "**[name]**: [message]");
 			langConf.addDefault("chat.stickied.enabled", "&aEnabled sticky chat for [chat]");
 			langConf.addDefault("chat.stickied.disabled", "&aDisabled sticky chat for [chat]");
 			langConf.addDefault("chat.stickied.swapped", "&aSwapped sticky chat from [oldchat] to [newchat]");
+
+			// Traitor Messages
+
+			langConf.addDefault("traitor.traitorcheck.wrong-usage","&cWrong Usage! /traitorcheck <player>");
+			langConf.addDefault("traitor.traitorcheck.playtime-left","&8[&6TraitorTracker&8] &c[player] &7has &6[h]h [m]m [s]s &7left until they become a bandit!");
+			langConf.addDefault("traitor.traitorcheck.lives-left","&8[&6TraitorTracker&8] &c[player] &7has &6[lives] &7lives left!");
+			langConf.addDefault("traitor.no-such-player", "&cThis player hasnt been on the server before!");
+			langConf.addDefault("traitor.not-a-traitor", "&cThis player isn't a traitor!");
 
 			langConf.options().copyDefaults(true);
 			langConf.save(lang);

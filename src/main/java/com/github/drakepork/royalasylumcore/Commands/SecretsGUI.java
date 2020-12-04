@@ -2,10 +2,15 @@ package com.github.drakepork.royalasylumcore.Commands;
 
 import com.github.drakepork.royalasylumcore.Core;
 import com.google.inject.Inject;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.protection.ApplicableRegionSet;
+import com.sk89q.worldguard.protection.managers.RegionManager;
+import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+import com.sk89q.worldguard.protection.regions.RegionContainer;
 import me.clip.placeholderapi.PlaceholderAPI;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -14,10 +19,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.persistence.PersistentDataType;
+
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.UUID;
+import java.util.*;
 
 public class SecretsGUI implements CommandExecutor {
 	private Core plugin;
@@ -27,12 +34,57 @@ public class SecretsGUI implements CommandExecutor {
 		this.plugin = plugin;
 	}
 
-	private ItemStack decorativeItemStack(Material material, int amount, String name) {
+	private ItemStack decorativeItemStack(Material material, int amount, String name, Player player) {
 		ItemStack item = new ItemStack(material, amount);
-		ItemMeta itemmeta = item.getItemMeta();
-		itemmeta.setDisplayName(name);
-		item.setItemMeta(itemmeta);
+		if(material.equals(Material.PLAYER_HEAD)) {
+			SkullMeta itemmeta = (SkullMeta) item.getItemMeta();
+			itemmeta.setDisplayName(name);
+			itemmeta.setOwningPlayer(player);
+			item.setItemMeta(itemmeta);
+		} else {
+			ItemMeta itemmeta = item.getItemMeta();
+			itemmeta.setDisplayName(name);
+			item.setItemMeta(itemmeta);
+		}
 		return item;
+	}
+
+	private ItemStack categoryMainItemStack(Player player, Material material, int amount, String name, String category, String guiType) {
+		File f = new File(plugin.getDataFolder() + File.separator + "secrets.yml");
+		File secretsDataFile = new File(plugin.getDataFolder() + File.separator
+				+ "secretsdata.yml");
+		YamlConfiguration pData = YamlConfiguration.loadConfiguration(secretsDataFile);
+		YamlConfiguration yamlf = YamlConfiguration.loadConfiguration(f);
+
+		if(!category.equalsIgnoreCase("all")) {
+			Set<String> secrets = yamlf.getConfigurationSection("inventory." + category).getKeys(false);
+			int totalSecrets = 0;
+
+			for(String secretKey : secrets) {
+				if(yamlf.isSet("inventory." + category + "." + secretKey + ".id")) {
+					totalSecrets += 1;
+				}
+			}
+
+			ItemStack item = new ItemStack(material, amount);
+			ItemMeta itemmeta = item.getItemMeta();
+			itemmeta.setDisplayName(name);
+			int secretsFound = 0;
+			if(pData.isSet(player.getUniqueId().toString() + ".secrets-found." + category)) {
+				secretsFound = pData.getConfigurationSection(player.getUniqueId().toString() + ".secrets-found." + category).getKeys(false).size();
+			}
+			String lore1 = ChatColor.GRAY +  "Secrets Found: " + secretsFound + "/" + totalSecrets;
+			itemmeta.setLore(Arrays.asList(new String[]{lore1}));
+			item.setItemMeta(itemmeta);
+
+			return item;
+		} else {
+			ItemStack item = new ItemStack(material, amount);
+			ItemMeta itemmeta = item.getItemMeta();
+			itemmeta.setDisplayName(name);
+			item.setItemMeta(itemmeta);
+			return item;
+		}
 	}
 
 	private ItemStack unknownItemStack() {
@@ -45,7 +97,19 @@ public class SecretsGUI implements CommandExecutor {
 		return item;
 	}
 
-	private ItemStack secretItemStack(Material material, int amount, String name, String line3, Player player, String secretId) {
+	private ItemStack rewardItemStack(Player player, List lore, String name, String reward) {
+		ItemStack item = new ItemStack(Material.CHEST_MINECART, 1);
+		NamespacedKey key = new NamespacedKey(plugin, "reward");
+		ItemMeta itemmeta = item.getItemMeta();
+		itemmeta.getPersistentDataContainer().set(key, PersistentDataType.STRING, reward);
+		itemmeta.setDisplayName(name);
+		itemmeta.setLore(lore);
+		item.setItemMeta(itemmeta);
+		return item;
+	}
+
+
+	private ItemStack secretItemStack(Material material, int amount, String name, String line3, Player player, String secretId, String category) {
 		ItemStack item = new ItemStack(material, amount);
 		ItemMeta itemmeta = item.getItemMeta();
 
@@ -57,8 +121,8 @@ public class SecretsGUI implements CommandExecutor {
 		File secretsDataFile = new File(plugin.getDataFolder() + File.separator
 				+ "secretsdata.yml");
 		YamlConfiguration pData = YamlConfiguration.loadConfiguration(secretsDataFile);
-		int amountFound = pData.getInt(player.getUniqueId().toString() + ".secrets-found." + secretId + ".times-found");
-		if (pData.get(player.getUniqueId().toString() + ".secrets-found." + secretId) != null) {
+		int amountFound = pData.getInt(player.getUniqueId().toString() + ".secrets-found." + category + "." + secretId + ".times-found");
+		if (pData.get(player.getUniqueId().toString() + ".secrets-found." + category + "." + secretId) != null) {
 			if (plsName.toLowerCase().contains("parkour")) {
 				if (amountFound == 1) {
 					line1 = ChatColor.GRAY + "You've done this parkour " + ChatColor.AQUA + amountFound + ChatColor.GRAY + " time";
@@ -117,51 +181,166 @@ public class SecretsGUI implements CommandExecutor {
 		return output;
 	}
 
-	public void openGUI(Player player, String pWorld) {
+	public void openGUI(Player player, String guiType) {
 		File f = new File(plugin.getDataFolder() + File.separator + "secrets.yml");
 		File secretsDataFile = new File(plugin.getDataFolder() + File.separator
 				+ "secretsdata.yml");
 		YamlConfiguration pData = YamlConfiguration.loadConfiguration(secretsDataFile);
 		YamlConfiguration yamlf = YamlConfiguration.loadConfiguration(f);
+		int slots = yamlf.getInt("inv-slots");
+		String guiTitle;
+		if(guiType.equalsIgnoreCase("main-menu")) {
+			guiTitle = "Main";
+		} else if(guiType.equalsIgnoreCase("rewards")) {
+			guiTitle = "Rewards";
+		} else if(guiType.equalsIgnoreCase("secrets")) {
+			guiTitle = "All";
+		} else {
+			guiTitle = guiType.substring(0, 1).toUpperCase() + guiType.substring(1);
+		}
 
-		Inventory rewardInv = Bukkit.createInventory(null, yamlf.getInt("inv-slots"), ChatColor.RED + "Secrets");
-		if(yamlf.contains("inventory." + pWorld)) {
-			for (int i = 0; i < yamlf.getInt("inv-slots"); i++) {
-				if (yamlf.isSet("inventory." + pWorld + "." + i)) {
-					Material material = Material.getMaterial(yamlf.getString("inventory." + pWorld + "." + i + ".material"));
+		if(guiType.equalsIgnoreCase("main"))
+			guiType = "main-menu";
+
+		if(guiType.equalsIgnoreCase("main-menu")) {
+			slots = yamlf.getInt("main-slots");
+		} else if(guiType.equalsIgnoreCase("rewards")) {
+			slots = yamlf.getInt("reward-slots");
+		} else if(guiType.equalsIgnoreCase("secrets")) {
+			slots = yamlf.getInt("secrets-slots");
+		}
+		ArrayList addedRewards = new ArrayList();
+		Inventory rewardInv = Bukkit.createInventory(null, slots, ChatColor.RED + "Secrets - " + guiTitle);
+		if(yamlf.contains("inventory." + guiType)) {
+			for (int i = 0; i < slots; i++) {
+				if (yamlf.isSet("inventory." + guiType + "." + i)) {
+					Material material = Material.getMaterial(yamlf.getString("inventory." + guiType + "." + i + ".material"));
 					ItemStack item;
-					int amount = yamlf.getInt("inventory." + pWorld + "." + i + ".amount");
-					if (yamlf.getBoolean("inventory." + pWorld + "." + i + ".meta")) {
-						String secretId = yamlf.getString("inventory." + pWorld + "." + i + ".id");
+					int amount = yamlf.getInt("inventory." + guiType + "." + i + ".amount");
+					if (yamlf.getBoolean("inventory." + guiType + "." + i + ".meta")) {
+						String secretId = yamlf.getString("inventory." + guiType + "." + i + ".id");
 						if (!pData.contains(player.getUniqueId().toString())) {
 							item = unknownItemStack();
-							rewardInv.setItem(yamlf.getInt("inventory." + pWorld + "." + i + ".slot"), item);
-						} else if (pData.getConfigurationSection(player.getUniqueId().toString() + ".secrets-found").contains(secretId)) {
-							String name = yamlf.getString("inventory." + pWorld + "." + i + ".name");
-							String file = yamlf.getString("inventory." + pWorld + "." + i + ".file");
-							item = secretItemStack(material, amount, name, getCooldown(file, player.getUniqueId()), player, secretId);
-							rewardInv.setItem(yamlf.getInt("inventory." + pWorld + "." + i + ".slot"), item);
+							rewardInv.setItem(i, item);
+						} else if (pData.isSet(player.getUniqueId().toString() + ".secrets-found." + guiType)) {
+							if (pData.getConfigurationSection(player.getUniqueId().toString() + ".secrets-found." + guiType).contains(secretId)) {
+								String name = yamlf.getString("inventory." + guiType + "." + i + ".name");
+								int secretX = yamlf.getInt("inventory." + guiType + "." + i + ".X");
+								int secretY = yamlf.getInt("inventory." + guiType + "." + i + ".Y");
+								int secretZ = yamlf.getInt("inventory." + guiType + "." + i + ".Z");
+								String secretWorld = yamlf.getString("inventory." + guiType + "." + i + ".world");
+								String file = secretWorld + "_" + secretX + "_" + secretY + "_" + secretZ + ".yml";
+								item = secretItemStack(material, amount, name, getCooldown(file, player.getUniqueId()), player, secretId, guiType);
+							} else {
+								item = unknownItemStack();
+							}
+							rewardInv.setItem(i, item);
 						} else {
 							item = unknownItemStack();
-							rewardInv.setItem(yamlf.getInt("inventory." + pWorld + "." + i + ".slot"), item);
+							rewardInv.setItem(i, item);
 						}
 					} else {
-						String name = yamlf.getString("inventory." + pWorld + "." + i + ".name");
-						item = decorativeItemStack(material, amount, name);
-						rewardInv.setItem(yamlf.getInt("inventory." + pWorld + "." + i + ".slot"), item);
+						String name = yamlf.getString("inventory." + guiType + "." + i + ".name");
+						if(yamlf.isSet("inventory." + guiType + "." + i + ".category-main")) {
+							String category = yamlf.getString("inventory." + guiType + "." + i + ".category-main");
+							item = categoryMainItemStack(player, material, amount, name, category, guiType);
+						} else {
+							item = decorativeItemStack(material, amount, name, player);
+						}
+						rewardInv.setItem(i, item);
+					}
+				} else if(guiType.equalsIgnoreCase("rewards")) {
+					if(pData.isSet(player.getUniqueId().toString() + ".rewards")) {
+						Set<String> rewards = pData.getConfigurationSection(player.getUniqueId().toString() + ".rewards").getKeys(false);
+						if (!rewards.isEmpty() && rewards != null) {
+							for (String reward : rewards) {
+								if (!pData.getBoolean(player.getUniqueId().toString() + ".rewards." + reward + ".collected")) {
+									if (!addedRewards.contains(reward)) {
+										File rewardsDataFile = new File(plugin.getDataFolder() + File.separator
+												+ "rewardsdata.yml");
+										YamlConfiguration rData = YamlConfiguration.loadConfiguration(rewardsDataFile);
+										String name = rData.getString(reward + ".name");
+										List lore = rData.getList(reward + ".lore");
+										ItemStack item = rewardItemStack(player, lore, name, reward);
+										rewardInv.setItem(i, item);
+										addedRewards.add(reward);
+										break;
+									}
+								}
+							}
+						}
 					}
 				}
 			}
 			player.openInventory(rewardInv);
 		} else {
-			player.sendMessage(ChatColor.RED + "No secrets exist in this world yet!");
+			player.sendMessage(ChatColor.RED + "Invalid secret category! /secret (category)");
 		}
 	}
 
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		Player player = (Player)sender;
-		String pWorld = player.getWorld().getName().toLowerCase();
-		openGUI(player, pWorld);
+		if(sender instanceof Player) {
+			Player player = (Player) sender;
+			if (args.length < 1) {
+				World pWorld = player.getWorld();
+				String guiType = "main-menu";
+				RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+				RegionManager regions = container.get(BukkitAdapter.adapt(pWorld));
+				ApplicableRegionSet regionList = regions.getApplicableRegions(BlockVector3.at(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ()));
+				if (!regionList.getRegions().isEmpty()) {
+					regionLoop:
+					for (ProtectedRegion region : regionList) {
+						if (pWorld.getName().equalsIgnoreCase("prisonbuild")) {
+							switch (region.getId()) {
+								case "peasantblock":
+									guiType = "peasant";
+									break regionLoop;
+								case "farmerblock":
+								case "chickenfarm":
+									guiType = "farmer";
+									break regionLoop;
+								case "craftsmenblock":
+									guiType = "craftsman";
+									break regionLoop;
+								case "vassalblcok":
+									guiType = "vassal";
+									break regionLoop;
+								case "market":
+								case "plots":
+								case "orchard":
+								case "vassalhills":
+									guiType = "other";
+									break regionLoop;
+							}
+						} else if (pWorld.getName().equalsIgnoreCase("noble")
+								|| pWorld.getName().equalsIgnoreCase("noble_nether")
+								|| pWorld.getName().equalsIgnoreCase("prisonbuild_the_end")) {
+							switch (region.getId()) {
+								case "noblecastle":
+									guiType = "noble";
+									break regionLoop;
+								case "baronvillage":
+									guiType = "baron";
+									break regionLoop;
+								case "viscount":
+									guiType = "viscount";
+									break regionLoop;
+								case "endisland":
+									guiType = "earl";
+									break regionLoop;
+							}
+						}
+					}
+				}
+				openGUI(player, guiType);
+			} else if (args.length == 1) {
+				openGUI(player, args[0]);
+			} else {
+				player.sendMessage(ChatColor.RED + "Invalid Usage! /secret (category)");
+			}
+		} else {
+			plugin.tellConsole("This command is only supported in-game!");
+		}
 		return true;
 	}
 }

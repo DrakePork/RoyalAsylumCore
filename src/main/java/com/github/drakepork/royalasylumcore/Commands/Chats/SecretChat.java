@@ -1,5 +1,4 @@
 package com.github.drakepork.royalasylumcore.Commands.Chats;
-
 import com.github.drakepork.royalasylumcore.Core;
 import com.github.drakepork.royalasylumcore.Utils.ChatUtils;
 import com.google.inject.Inject;
@@ -8,11 +7,12 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-public class RoundTableChat implements CommandExecutor {
+
+public class SecretChat implements CommandExecutor {
 	private Core plugin;
 
 	@Inject
-	public RoundTableChat(Core plugin) {
+	public SecretChat(Core plugin) {
 		this.plugin = plugin;
 	}
 
@@ -21,9 +21,9 @@ public class RoundTableChat implements CommandExecutor {
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if(sender instanceof Player) {
-			chatUtils.chatSendMessage(args, sender, "roundtable", "roundtable-chat");
+			chatUtils.chatSendMessage(args, sender, "secret", "secret-chat");
 		} else {
-			chatUtils.consoleChatSend(args, "roundtable", "roundtable-chat");
+			chatUtils.consoleChatSend(args, "secret", "secret-chat");
 		}
 		return true;
 	}
