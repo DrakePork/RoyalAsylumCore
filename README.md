@@ -1,2 +1,2 @@
-# Traitors
-Minecraft Plugin for a server.
+# RoyalAsylum
+Core plugin for RoyalAsylum.
