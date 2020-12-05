@@ -29,6 +29,9 @@ public class TraitorRun implements CommandExecutor {
 	}
 
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+		File lang = new File(plugin.getDataFolder() + File.separator
+				+ "lang" + File.separator + plugin.getConfig().getString("lang-file"));
+		FileConfiguration langConf = YamlConfiguration.loadConfiguration(lang);
 		File f = new File(plugin.getDataFolder() + File.separator
 				+ "traitors.yml");
 		FileConfiguration config = plugin.getConfig();
@@ -74,17 +77,17 @@ public class TraitorRun implements CommandExecutor {
 						traitors = YamlConfiguration.loadConfiguration(f);
 						traitorList = traitors.getKeys(false);
 						if(traitorList.size() < 2) {
+							String portalOpen = plugin.colourMessage(langConf.getString("traitor.portal-open-timer")
+									.replaceAll("\\[m\\]", String.valueOf(config.getLong("cooldowns.traitor-grace-period"))));
 							for (Player online : Bukkit.getOnlinePlayers()) {
-								online.sendMessage("");
-								online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
-										+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals are opening in " + config.getLong("cooldowns.traitor-grace-period") + " minutes...");
+								online.sendMessage(portalOpen);
 							}
 							plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 								public void run() {
 									if (CMI.getInstance().getPortalManager().getByName("BHPortal") != null || CMI.getInstance().getPortalManager().getByName("NHPortal") != null) {
+										String portalOpened = plugin.colourMessage(langConf.getString("traitor.portal-open"));
 										for (Player online : Bukkit.getOnlinePlayers()) {
-											online.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "Royal Decree" + ChatColor.DARK_GRAY + "] "
-													+ ChatColor.AQUA + "The Noble and Bandit Badlands Portals have " + ChatColor.GREEN + "OPENED");
+											online.sendMessage(portalOpened);
 										}
 										CMI.getInstance().getPortalManager().getByName("BHPortal").setEnabled(true);
 										CMI.getInstance().getPortalManager().getByName("NHPortal").setEnabled(true);
@@ -110,7 +113,7 @@ public class TraitorRun implements CommandExecutor {
 						e.printStackTrace();
 					}
 				} else {
-					player.sendMessage(ChatColor.RED + "You're already a bandit!");
+					player.sendMessage(plugin.colourMessage(langConf.getString("traitor.already-bandit")));
 				}
 			} else {
 				if (args.length < 2) {

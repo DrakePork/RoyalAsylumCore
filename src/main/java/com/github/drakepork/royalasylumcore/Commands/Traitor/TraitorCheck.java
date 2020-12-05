@@ -4,7 +4,6 @@ import com.Zrips.CMI.CMI;
 import com.Zrips.CMI.Containers.CMIUser;
 import com.github.drakepork.royalasylumcore.Core;
 import com.google.inject.Inject;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -16,7 +15,6 @@ import org.bukkit.entity.Player;
 import java.io.File;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 
 public class TraitorCheck implements CommandExecutor {
 	private Core plugin;
@@ -45,7 +43,8 @@ public class TraitorCheck implements CommandExecutor {
 				playTimeString = playTimeString.replaceAll("\\[h\\]", String.valueOf(hours));
 				playTimeString = playTimeString.replaceAll("\\[m\\]", String.valueOf(mins));
 				playTimeString = playTimeString.replaceAll("\\[s\\]", String.valueOf(secs));
-				String livesString = langConf.getString("traitor.traitorcheck.lives-left").replaceAll("\\[message\\]", String.valueOf(lives));
+				String livesString = langConf.getString("traitor.traitorcheck.lives-left").replaceAll("\\[lives\\]", String.valueOf(lives));
+				livesString = livesString.replaceAll("\\[player\\]", player.getName());
 				sender.sendMessage(plugin.colourMessage(playTimeString + "\n" + livesString));
 			} else {
 				sender.sendMessage(plugin.colourMessage(langConf.getString("traitor.not-a-traitor")));
@@ -71,7 +70,6 @@ public class TraitorCheck implements CommandExecutor {
 				if (traitorList.contains(player.getUniqueId().toString())) {
 					CMIUser user = CMI.getInstance().getPlayerManager().getUser(player);
 					Long iniPlaytime = traitors.getLong(player.getUniqueId().toString() + ".playtime");
-					int lives = traitors.getInt(player.getUniqueId().toString() + ".life");
 					Long currPlaytime = user.getTotalPlayTime();
 					Long remPlaytime = currPlaytime - iniPlaytime;
 					long timeRem = (TimeUnit.MINUTES.toMillis(config.getLong("cooldowns.traitor-time-required")) - remPlaytime) / 1000;
@@ -80,11 +78,12 @@ public class TraitorCheck implements CommandExecutor {
 					int mins = remainder / 60;
 					remainder = remainder - mins * 60;
 					int secs = remainder;
-					sender.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
-							+ ChatColor.GRAY + "You have "
-							+ ChatColor.YELLOW + hours + "h " + mins + "m " + secs + "s " + ChatColor.GRAY + "left until you become a bandit!");
-					sender.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GOLD + "TraitorTracker" + ChatColor.DARK_GRAY + "] "
-							+ ChatColor.GRAY + "You have " + ChatColor.GREEN + lives + ChatColor.GRAY + " lives left!");
+					int lives = traitors.getInt(player.getUniqueId().toString() + ".life");
+					String playTimeString = langConf.getString("traitor.traitorcheck.personal-playtime-left").replaceAll("\\[h\\]", String.valueOf(hours));
+					playTimeString = playTimeString.replaceAll("\\[m\\]", String.valueOf(mins));
+					playTimeString = playTimeString.replaceAll("\\[s\\]", String.valueOf(secs));
+					String livesString = langConf.getString("traitor.traitorcheck.personal-lives-left").replaceAll("\\[lives\\]", String.valueOf(lives));
+					sender.sendMessage(plugin.colourMessage(playTimeString + "\n" + livesString));
 				} else {
 					sender.sendMessage(ChatColor.RED + "You are not a traitor!");
 				}

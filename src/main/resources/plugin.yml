@@ -83,6 +83,11 @@ commands:
     usage: /<command>
     permission: royalasylum.secretfound
     permission-message: §4Error:§c You do not have permission to execute this command...
+  econcheck:
+    description: SecretFound
+    usage: /<command>
+    permission: royalasylum.economycheck
+    permission-message: §4Error:§c You do not have permission to execute this command...
 permissions:
   royalasylum.traitor:
     description: Gives you access to /traitor commands
@@ -114,3 +119,5 @@ permissions:
     description: Gives you access to /secretfound command
   royalasylum.chat.secret:
     description: Gives you access to /secretfound command
+  royalasylum.economycheck:
+    description: Gives you access to /econcheck command

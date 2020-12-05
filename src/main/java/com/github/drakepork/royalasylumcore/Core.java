@@ -2,6 +2,7 @@ package com.github.drakepork.royalasylumcore;
 
 import com.Zrips.CMI.CMI;
 import com.Zrips.CMI.Containers.CMIUser;
+import com.Zrips.CMI.Modules.Economy.Economy;
 import com.bencodez.votingplugin.user.UserManager;
 import com.bencodez.votingplugin.user.VotingPluginUser;
 import com.comphenix.protocol.PacketType;
@@ -11,6 +12,7 @@ import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
+import com.github.drakepork.royalasylumcore.Commands.EconomyCheck;
 import com.github.drakepork.royalasylumcore.Commands.SecretFound;
 import com.github.drakepork.royalasylumcore.Commands.SecretsGUI;
 import com.github.drakepork.royalasylumcore.Commands.ShopGUI;
@@ -23,6 +25,7 @@ import com.google.inject.Injector;
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
 import me.realized.tokenmanager.TokenManagerPlugin;
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -46,7 +49,9 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -61,6 +66,8 @@ public final class Core extends JavaPlugin implements Listener {
     public HashMap<UUID, String> stickyChatEnabled = new HashMap<>();
 
     public HashMap<UUID, Integer> blocksChopped = new HashMap<>();
+
+    public HashMap<String, String> hexColour = new HashMap<>();
 
     @Inject private LangCreator lang;
     @Inject private ConfigCreator ConfigCreator;
@@ -81,6 +88,8 @@ public final class Core extends JavaPlugin implements Listener {
     @Inject private ShopGUI ShopGUI;
     @Inject private SecretsGUI SecretsGUI;
     @Inject private SecretFound SecretFound;
+    @Inject private EconomyCheck EconomyCheck;
+
 
     private Discord Discord = new Discord(this);
 
@@ -161,7 +170,7 @@ public final class Core extends JavaPlugin implements Listener {
         getCommand("royalshop").setExecutor(this.ShopGUI);
         getCommand("secrets").setExecutor(this.SecretsGUI);
         getCommand("secretfound").setExecutor(this.SecretFound);
-
+        getCommand("econcheck").setExecutor(this.EconomyCheck);
 
         getLogger().info("Enabled RoyalAsylumCore v" + getDescription().getVersion());
 
@@ -184,6 +193,18 @@ public final class Core extends JavaPlugin implements Listener {
             }
         });
 
+        String line = "";
+        String splitBy = ",";
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(this.getDataFolder() + File.separator
+                    + "colors.csv"));
+            while ((line = br.readLine()) != null) {
+                String[] colors = line.split(splitBy);
+                hexColour.put(colors[0].toLowerCase().replaceAll(" ", ""), colors[1]);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -197,12 +218,26 @@ public final class Core extends JavaPlugin implements Listener {
         return message;
     }
 
+
+    public String removeColour(String message){
+        message = removeColorCodes(ChatColor.translateAlternateColorCodes('&', message));
+        return message;
+    }
+
     public void tellConsole(String message){
         Bukkit.getConsoleSender().sendMessage(message);
     }
 
 
     public String translateHexColorCodes(String message) {
+        if(StringUtils.substringsBetween(message, "{#", "}") != null) {
+            String[] hexNames = StringUtils.substringsBetween(message, "{#", "}");
+            for (String hexName : hexNames) {
+                if (hexColour.get(hexName.toLowerCase()) != null) {
+                    message = message.replaceAll(hexName, hexColour.get(hexName.toLowerCase()).substring(1));
+                }
+            }
+        }
         final Pattern hexPattern = Pattern.compile("\\{#" + "([A-Fa-f0-9]{6})" + "\\}");
         Matcher matcher = hexPattern.matcher(message);
         StringBuffer buffer = new StringBuffer(message.length() + 4 * 8);
@@ -213,6 +248,26 @@ public final class Core extends JavaPlugin implements Listener {
                     + ChatColor.COLOR_CHAR + group.charAt(2) + ChatColor.COLOR_CHAR + group.charAt(3)
                     + ChatColor.COLOR_CHAR + group.charAt(4) + ChatColor.COLOR_CHAR + group.charAt(5)
             );
+        }
+        return matcher.appendTail(buffer).toString();
+    }
+
+
+    public String removeColorCodes(String message) {
+        if(StringUtils.substringsBetween(message, "{#", "}") != null) {
+            String[] hexNames = StringUtils.substringsBetween(message, "{#", "}");
+            for (String hexName : hexNames) {
+                if (hexColour.get(hexName.toLowerCase()) != null) {
+                    message = message.replaceAll("\\{#" + hexName + "\\}", "");
+                }
+            }
+        }
+        final Pattern hexPattern = Pattern.compile("\\{#" + "([A-Fa-f0-9]{6})" + "\\}");
+        Matcher matcher = hexPattern.matcher(message);
+        StringBuffer buffer = new StringBuffer(message.length() + 4 * 8);
+        while (matcher.find()) {
+            String group = matcher.group(1);
+            matcher.appendReplacement(buffer, "");
         }
         return matcher.appendTail(buffer).toString();
     }
@@ -613,6 +668,7 @@ public final class Core extends JavaPlugin implements Listener {
                 + "traitors.yml");
         FileConfiguration traitors = YamlConfiguration.loadConfiguration(f);
         FileConfiguration config = this.getConfig();
+        String[] pageCheck = ChatColor.stripColor(event.getView().getTitle()).split(" ");
         String[] traitorTitle = ChatColor.stripColor(event.getView().getTitle()).split(" ");
         if(traitorTitle[0].equalsIgnoreCase("Traitors")) {
             if (event.getCurrentItem() != null) {
@@ -929,6 +985,36 @@ public final class Core extends JavaPlugin implements Listener {
                                 SecretsGUI.openGUI(Bukkit.getPlayer(human.getName()), "rewards");
                                 break;
                         }
+                }
+            }
+        } else if (pageCheck[0].equalsIgnoreCase("Shop") && pageCheck[1].equalsIgnoreCase("Log")) {
+            if (event.getCurrentItem() != null) {
+                event.setCancelled(true);
+                if(event.getCurrentItem().getType() == Material.PAPER) {
+                    if(event.getSlot() == 46) {
+                        int page = Integer.parseInt(pageCheck[4])-1;
+                        EconomyCheck.openGUI((Player) event.getWhoClicked(), page, "default");
+                    } else if(event.getSlot() == 52) {
+                        int page = Integer.parseInt(pageCheck[4])+1;
+                        EconomyCheck.openGUI((Player) event.getWhoClicked(), page, "default");
+                    }
+                } else if(event.getCurrentItem().getType() == Material.BOOK) {
+                    if(event.getSlot() == 47) {
+                        int page = Integer.parseInt(pageCheck[4]);
+                        EconomyCheck.openGUI((Player) event.getWhoClicked(), page, "amounttop");
+                    } else if(event.getSlot() == 48) {
+                        int page = Integer.parseInt(pageCheck[4]);
+                        EconomyCheck.openGUI((Player) event.getWhoClicked(), page, "amountbottom");
+                    } else if(event.getSlot() == 49) {
+                        event.getWhoClicked().closeInventory();
+                        event.getWhoClicked().sendMessage(ChatColor.RED + "/econcheck player <player>");
+                    } else if(event.getSlot() == 50) {
+                        int page = Integer.parseInt(pageCheck[4]);
+                        EconomyCheck.openGUI((Player) event.getWhoClicked(), page, "moneybottom");
+                    } else if(event.getSlot() == 51) {
+                        int page = Integer.parseInt(pageCheck[4]);
+                        EconomyCheck.openGUI((Player) event.getWhoClicked(), page, "moneytop");
+                    }
                 }
             }
         }

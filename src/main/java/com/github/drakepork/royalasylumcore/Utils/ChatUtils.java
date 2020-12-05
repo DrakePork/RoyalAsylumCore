@@ -42,7 +42,7 @@ public class ChatUtils {
 			String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", Matcher.quoteReplacement(player.getName()));
 			String dMessage = dFormat.replaceAll("\\[message\\]", Matcher.quoteReplacement(cMessage));
 			TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName(discordId);
-			channel.sendMessage(dMessage).queue();
+			channel.sendMessage(plugin.removeColour(dMessage)).queue();
 		} else {
 			stickyChatCheck(player, chatId.substring(0, 1).toUpperCase() + chatId.substring(1),  discordId);
 		}
@@ -70,7 +70,7 @@ public class ChatUtils {
 			String dFormat = langConf.getString("chat.discordSRV.format").replaceAll("\\[name\\]", "Console");
 			String dMessage = dFormat.replaceAll("\\[message\\]", Matcher.quoteReplacement(cMessage));
 			TextChannel channel = DiscordSRV.getPlugin().getDestinationTextChannelForGameChannelName(discordId);
-			channel.sendMessage(dMessage).queue();
+			channel.sendMessage(plugin.removeColour(dMessage)).queue();
 		} else {
 			plugin.tellConsole(plugin.colourMessage(prefix + langConf.getString("chat." + chatId + ".wrong-usage")));
 		}

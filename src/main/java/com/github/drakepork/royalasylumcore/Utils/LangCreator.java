@@ -69,6 +69,16 @@ public class LangCreator {
 			langConf.addDefault("traitor.traitorcheck.lives-left","&8[&6TraitorTracker&8] &c[player] &7has &6[lives] &7lives left!");
 			langConf.addDefault("traitor.no-such-player", "&cThis player hasnt been on the server before!");
 			langConf.addDefault("traitor.not-a-traitor", "&cThis player isn't a traitor!");
+			langConf.addDefault("traitor.already-bandit", "&cYou're already a bandit!");
+
+			langConf.addDefault("traitor.traitorcheck.personal-playtime-left","&8[&6TraitorTracker&8] &7You have &6[h]h [m]m [s]s &7left until you become a bandit!");
+			langConf.addDefault("traitor.traitorcheck.personal-lives-left","&8[&6TraitorTracker&8] &7You have &6[lives] &7lives left!");
+
+
+			langConf.addDefault("traitor.portal-open-timer", "&8[&6Royal Decree&8] &bThe Badlands portals are opening in [m] minutes...");
+			langConf.addDefault("traitor.portal-open", "&8[&6Royal Decree&8] &bThe Badlands portals have OPENED");
+			langConf.addDefault("traitor.portal-close", "&8[&6Royal Decree&8] &bThe Badlands portals are opening in [m] minutes...");
+
 
 			langConf.options().copyDefaults(true);
 			langConf.save(lang);
